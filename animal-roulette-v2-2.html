@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 Animal Roulette — Update 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07071a;--card:#111130;--card2:#1a1a45;--border:#252565;
+  --text:#e8e8ff;--text2:#7777aa;--gold:#ffd700;--frag:#66ffcc;
+  --nav:56px;--tab:50px;
+  --cu:#cc00ff;--ice:#88eeff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(80,40,200,.13),transparent),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(200,40,120,.1),transparent);}
+body.ice-mode{--bg:#071a2a;--card:#0a1e35;--card2:#0f2a45;--border:#1a4060;--text:#d0f0ff;--text2:#5599aa;}
+body.ice-mode::before{background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(0,150,255,.15),transparent),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(0,200,255,.1),transparent);}
+body.purge-mode{--bg:#1a0000;--card:#200505;--card2:#2a0a0a;--border:#4a1010;--text:#ffe0e0;--text2:#aa6666;}
+body.purge-mode::before{background:radial-gradient(ellipse 80% 50% at 50% 50%,rgba(255,0,0,.18),transparent);}
+
+/* UPDATE RIBBON */
+.uprib{position:fixed;top:0;right:0;z-index:9999;pointer-events:none;}
+.uprib span{display:block;background:linear-gradient(135deg,#ff0055,#9944ff);color:#fff;
+  font-family:'Fredoka One';font-size:.62rem;padding:3px 26px;
+  transform:rotate(45deg) translate(18px,-8px);box-shadow:0 2px 8px rgba(0,0,0,.5);letter-spacing:1px;}
+
+/* TOPBAR */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav);
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px;
+  background:rgba(7,7,26,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.logo{font-family:'Fredoka One';font-size:1.05rem;background:linear-gradient(120deg,#ff6644,#ffcc00,#ff44cc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
+.topstats{display:flex;gap:5px;align-items:center;}
+.badge{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:3px 9px;font-size:.7rem;font-weight:800;}
+.gv{color:#ffd700;}.fv{color:#66ffcc;}.cv{color:var(--cu);}
+.mode-badge{font-size:.68rem;font-weight:900;padding:3px 9px;border-radius:20px;cursor:pointer;}
+.mb-ice{background:rgba(136,238,255,.12);border:1px solid rgba(136,238,255,.4);color:var(--ice);}
+.mb-purge{background:rgba(255,0,0,.15);border:1px solid rgba(255,50,50,.5);color:#ff4444;animation:pulseRed 1s infinite;}
+@keyframes pulseRed{0%,100%{box-shadow:0 0 6px rgba(255,0,0,.3)}50%{box-shadow:0 0 18px rgba(255,0,0,.7)}}
+
+/* MUSIC PLAYER */
+#music-bar{position:fixed;top:var(--nav);left:0;right:0;z-index:99;height:36px;
+  display:flex;align-items:center;gap:10px;padding:0 14px;
+  background:rgba(10,10,30,.9);border-bottom:1px solid var(--border);}
+.music-btn{background:transparent;border:1px solid var(--border);border-radius:8px;
+  padding:3px 10px;font-size:.72rem;cursor:pointer;color:var(--text2);transition:all .2s;font-family:'Nunito';}
+.music-btn:hover,.music-btn.on{border-color:#ffd700;color:#ffd700;}
+.music-title{font-size:.7rem;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.music-vol{width:70px;accent-color:#ffd700;}
+#music-prog{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;cursor:pointer;}
+#music-prog-bar{height:100%;background:linear-gradient(90deg,#ffd700,#ff44cc);border-radius:4px;transition:width .5s linear;}
+
+/* TABS */
+#tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--tab);
+  display:flex;background:rgba(7,7,26,.97);border-top:1px solid var(--border);}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;font-size:.55rem;font-weight:800;color:var(--text2);cursor:pointer;
+  border:none;background:transparent;font-family:'Nunito';transition:color .2s;}
+.tb .i{font-size:.95rem;}.tb.on{color:#ffd700;}.tb.on .i{filter:drop-shadow(0 0 5px #ffd700);}
+.tb.ctab.on{color:var(--cu);}.tb.ctab.on .i{filter:drop-shadow(0 0 7px var(--cu));}
+.tb.ictab.on{color:var(--ice);}.tb.ictab.on .i{filter:drop-shadow(0 0 7px var(--ice));}
+.tb.btab.on{color:#ff8800;}.tb.btab.on .i{filter:drop-shadow(0 0 7px #ff8800);}
+
+/* SCREENS */
+.sc{display:none;position:fixed;left:0;right:0;overflow-y:auto;z-index:1;
+  top:calc(var(--nav) + 36px);bottom:var(--tab);}
+.sc::-webkit-scrollbar{width:4px;}.sc::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.sc.on{display:block;}
+#s-spin.on,#s-icemap.on{display:grid;grid-template-columns:1fr 278px;gap:11px;padding:11px;align-items:start;}
+#s-shop.on{display:grid;grid-template-columns:1fr 255px;gap:11px;padding:11px;}
+#s-cursed.on,#s-coll.on,#s-stats.on,#s-battle.on{display:block;padding:11px;}
+
+/* PURGE OVERLAY */
+#purge-overlay{display:none;position:fixed;inset:0;z-index:200;pointer-events:none;
+  background:rgba(180,0,0,.0);transition:background 1s;}
+#purge-overlay.show{display:block;background:rgba(20,0,0,.65);}
+#purge-msg{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:201;font-family:'Fredoka One';font-size:2rem;color:#ff2222;
+  text-shadow:0 0 30px #ff0000;text-align:center;pointer-events:none;}
+#purge-msg.show{display:block;animation:purgePulse 1s ease-in-out infinite;}
+@keyframes purgePulse{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}}
+#purge-timer-bar-wrap{position:fixed;top:calc(var(--nav)+36px);left:0;right:0;height:4px;z-index:202;display:none;}
+#purge-timer-bar{height:100%;background:linear-gradient(90deg,#ff0000,#ff4444);transition:width .5s linear;box-shadow:0 0 8px #ff0000;}
+
+/* WHEEL */
+.sl{display:flex;flex-direction:column;align-items:center;gap:9px;}
+.ww{position:relative;flex-shrink:0;}
+.wring{width:100%;height:100%;border-radius:50%;border:4px solid rgba(255,255,255,.1);box-shadow:0 0 45px rgba(255,180,0,.2);overflow:hidden;transition:all .4s;}
+canvas{width:100%;height:100%;border-radius:50%;}
+.ndl{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;
+  border-left:8px solid transparent;border-right:8px solid transparent;border-top:22px solid #ffcc00;
+  filter:drop-shadow(0 2px 5px #ffcc00aa);z-index:10;transition:border-top-color .4s;}
+.cdot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;
+  border-radius:50%;background:radial-gradient(circle,#fff 0%,#ffcc00 60%,#ff6600 100%);
+  box-shadow:0 0 12px #ffcc0099;z-index:10;pointer-events:none;}
+.spbtn{border:none;border-radius:50px;padding:11px 40px;font-family:'Fredoka One';
+  font-size:1.1rem;color:#fff;cursor:pointer;letter-spacing:1px;transition:all .15s;width:100%;max-width:340px;}
+.spbtn-n{background:linear-gradient(135deg,#ff5533,#ffcc00,#ff44cc);box-shadow:0 4px 20px rgba(255,100,0,.4);}
+.spbtn-c{background:linear-gradient(135deg,#440088,#9944ff,#cc00ff);box-shadow:0 4px 20px rgba(153,68,255,.5);}
+.spbtn-i{background:linear-gradient(135deg,#0088cc,#00ccff,#88eeff);box-shadow:0 4px 20px rgba(0,200,255,.4);color:#001a2a;}
+.spbtn:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.spbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none;}
+.scost{font-size:.7rem;color:var(--text2);}
+.cbox{width:100%;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 12px;}
+.ctit{font-family:'Fredoka One';font-size:.78rem;color:var(--text2);margin-bottom:5px;}
+.crow{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:.68rem;}
+.cbw{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden;}
+.cb{height:100%;border-radius:4px;}
+
+/* MODE TOGGLE */
+.mrow{display:flex;gap:7px;width:100%;max-width:340px;}
+.mbtn{flex:1;padding:6px;border:none;border-radius:10px;font-family:'Fredoka One';font-size:.72rem;cursor:pointer;transition:all .2s;opacity:.55;}
+.mbtn.on{opacity:1;transform:scale(1.03);}
+.mbtn-n{background:linear-gradient(135deg,#ff5533,#ffcc00);color:#1a0000;}
+.mbtn-c{background:linear-gradient(135deg,#440088,#9944ff);color:#fff;}
+
+/* RIGHT PANELS */
+.sr{display:flex;flex-direction:column;gap:9px;overflow-y:auto;}
+.pnl{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px;flex-shrink:0;}
+.pnl-cu{background:rgba(80,0,150,.2);border-color:rgba(153,68,255,.35);}
+.pnl-ice{background:rgba(0,80,150,.2);border-color:rgba(0,180,255,.35);}
+.pt{font-family:'Fredoka One';font-size:.83rem;margin-bottom:7px;}
+.ptg{color:#ffd700;}.ptt{color:#66ffcc;}.ptgr{color:#44ff88;}.ptcu{color:var(--cu);}.ptice{color:var(--ice);}
+.lbw{background:rgba(0,0,0,.35);border-radius:8px;height:9px;overflow:hidden;margin-bottom:5px;}
+.lb{height:100%;border-radius:8px;background:linear-gradient(90deg,#ffcc00,#ff6644);transition:width .5s;}
+.lbice{background:linear-gradient(90deg,#00ccff,#88eeff)!important;}
+.li{font-size:.68rem;color:var(--text2);display:flex;justify-content:space-between;margin-bottom:5px;}
+.xbtn{width:100%;padding:6px;border:none;border-radius:9px;font-family:'Fredoka One';font-size:.74rem;cursor:pointer;transition:all .2s;}
+.xg{background:linear-gradient(135deg,#ffcc00,#ff9900);color:#1a0800;}
+.xt{background:linear-gradient(135deg,#66ffcc,#4488ff);color:#000;}
+.xp{background:linear-gradient(135deg,#ff44cc,#aa0066);color:#fff;}
+.xcu{background:linear-gradient(135deg,#9944ff,#440088);color:#fff;}
+.xice{background:linear-gradient(135deg,#00ccff,#0066aa);color:#fff;}
+.xbtn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.xbtn:disabled{opacity:.3;cursor:not-allowed;transform:none;filter:none;}
+.slts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.slt{width:64px;height:70px;border:2px dashed var(--border);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;background:rgba(0,0,0,.2);font-size:1.25rem;}
+.slt.fl{border-style:solid;background:var(--card2);}
+.slt.lk{opacity:.2;cursor:not-allowed;pointer-events:none;}
+.sn{font-size:.5rem;color:var(--text2);text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.si{font-size:.54rem;color:#ffd700;font-weight:800;}
+.bign{font-size:1.15rem;font-weight:900;color:#ffd700;}
+.sub{font-size:.66rem;color:var(--text2);margin-top:2px;}
+
+/* COLLECTION */
+#s-coll{padding:11px;}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.stl{font-family:'Fredoka One';font-size:1.1rem;background:linear-gradient(120deg,#ff6644,#ffcc00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.fils{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px;}
+.fb{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:3px 9px;font-size:.66rem;font-weight:800;cursor:pointer;color:var(--text2);transition:all .2s;font-family:'Nunito';}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:8px;}
+.ac{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 6px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.ac:hover{transform:translateY(-2px);}
+.ac.no{opacity:.28;filter:grayscale(.5);}
+.ae{font-size:1.8rem;display:block;margin-bottom:2px;}
+.an{font-size:.65rem;font-weight:800;margin-bottom:1px;}
+.ar{font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.7px;}
+.ai{font-size:.58rem;color:#ffd700;margin-top:2px;}
+.cnt{position:absolute;top:3px;right:4px;background:rgba(0,0,0,.65);border-radius:5px;padding:1px 4px;font-size:.58rem;font-weight:800;}
+
+/* SHOP */
+.shtl{font-family:'Fredoka One';font-size:1rem;color:#ffd700;margin-bottom:6px;}
+.stmr{display:flex;align-items:center;gap:7px;font-size:.68rem;color:var(--text2);margin-bottom:9px;}
+.tbw{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden;}
+.tbar{height:100%;background:linear-gradient(90deg,#44ff88,#ffcc00);border-radius:4px;transition:width 1s linear;}
+.sgrd{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;}
+.scd{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 8px;text-align:center;transition:all .2s;}
+.scd:hover{transform:translateY(-2px);}
+.se{font-size:2.3rem;display:block;margin-bottom:4px;}
+.snm{font-weight:800;font-size:.75rem;margin-bottom:2px;}
+.srar{font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
+.spr{display:block;background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.3);border-radius:12px;padding:3px 8px;font-size:.72rem;font-weight:800;color:#ffd700;margin-bottom:4px;}
+.bb{width:100%;padding:6px;border:none;border-radius:8px;font-family:'Fredoka One';font-size:.75rem;cursor:pointer;background:linear-gradient(135deg,#ffcc00,#ff9900);color:#1a0800;transition:all .2s;}
+.bb:hover{filter:brightness(1.1);}
+.cpp{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px;height:fit-content;position:sticky;top:0;}
+.cpp select,.cpp input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 9px;font-family:'Nunito';font-size:.74rem;margin-bottom:6px;}
+.cpv{text-align:center;padding:9px;background:rgba(0,0,0,.25);border-radius:8px;margin:5px 0;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.orow{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+.ob{padding:3px 6px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:.74rem;transition:all .15s;font-family:'Nunito';}
+.ob:hover,.ob.sl{border-color:#ff44cc;color:#ff44cc;}
+
+/* CURSED */
+#s-cursed{background:radial-gradient(ellipse at 50% 0%,rgba(100,0,200,.18),transparent 55%);}
+.cbanner{background:linear-gradient(135deg,rgba(60,0,140,.65),rgba(120,0,200,.3));border:2px solid rgba(153,68,255,.55);border-radius:16px;padding:16px;text-align:center;margin-bottom:14px;position:relative;overflow:hidden;}
+.cbanner::before{content:'☠️';position:absolute;font-size:5rem;opacity:.06;top:-5px;left:50%;transform:translateX(-50%);}
+.ctitle{font-family:'Fredoka One';font-size:1.4rem;color:var(--cu);text-shadow:0 0 18px var(--cu);margin-bottom:4px;}
+.csub{font-size:.75rem;color:#cc88ff;}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px;}
+@media(max-width:680px){.cgrid{grid-template-columns:1fr 1fr;}}
+.ccard{background:rgba(50,0,120,.38);border:1px solid rgba(153,68,255,.38);border-radius:13px;padding:13px 10px;text-align:center;}
+.cctit{font-family:'Fredoka One';font-size:.85rem;color:var(--cu);margin-bottom:6px;}
+.cfrow{display:flex;gap:8px;margin-bottom:11px;}
+.cfbox{flex:1;background:rgba(50,0,120,.28);border:1px solid rgba(153,68,255,.3);border-radius:10px;padding:8px 11px;}
+.cfval{font-family:'Fredoka One';font-size:1.1rem;}
+.cflbl{font-size:.65rem;color:#cc88ff;}
+.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.excard{background:rgba(40,0,100,.38);border:1px solid rgba(153,68,255,.32);border-radius:12px;padding:12px 9px;text-align:center;}
+.exctit{font-family:'Fredoka One';font-size:.78rem;color:#cc88ff;margin-bottom:6px;}
+.exv{font-size:.7rem;color:var(--text2);margin-bottom:7px;}
+.adm-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:14px;}
+.admc{background:rgba(50,0,20,.55);border:2px solid rgba(255,0,85,.4);border-radius:13px;padding:13px 9px;text-align:center;position:relative;overflow:hidden;}
+.admc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,0,85,.07),transparent);pointer-events:none;}
+.adme{font-size:3rem;display:block;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,0,85,.6));}
+.admn{font-family:'Fredoka One';font-size:.95rem;color:#ff4488;margin-bottom:2px;}
+.admi{font-size:.7rem;font-weight:900;color:#ffd700;margin-bottom:5px;}
+.admr{font-size:.65rem;color:#ff9999;margin-bottom:7px;}
+.clm-btn{width:100%;padding:7px;border:none;border-radius:9px;font-family:'Fredoka One';font-size:.78rem;cursor:pointer;background:linear-gradient(135deg,#ff0055,#880022);color:#fff;transition:all .2s;}
+.clm-btn:hover{filter:brightness(1.2);}
+.clm-btn:disabled{opacity:.35;cursor:not-allowed;filter:none;}
+.puzz-outer{background:rgba(0,0,0,.5);border-radius:10px;height:16px;overflow:hidden;margin-bottom:5px;border:1px solid rgba(153,68,255,.28);}
+.puzz-bar{height:100%;border-radius:10px;background:linear-gradient(90deg,#440088,#9944ff,#cc00ff);transition:width .5s;box-shadow:0 0 10px #9944ff77;}
+.puzz-info{font-size:.68rem;color:#cc88ff;display:flex;justify-content:space-between;}
+@keyframes cpulse{0%,100%{text-shadow:0 0 8px var(--cu),0 0 18px var(--cu)}50%{text-shadow:0 0 18px var(--cu),0 0 36px #ff00ff}}
+.ctext{animation:cpulse 2s ease-in-out infinite;}
+@keyframes ipulse{0%,100%{text-shadow:0 0 8px var(--ice)}50%{text-shadow:0 0 18px var(--ice),0 0 36px #fff}}
+.itext{animation:ipulse 2s ease-in-out infinite;}
+
+/* ICE MAP */
+#s-icemap.on{display:grid;grid-template-columns:1fr 278px;gap:11px;padding:11px;align-items:start;}
+.ice-header{background:linear-gradient(135deg,rgba(0,80,180,.45),rgba(0,150,255,.2));border:2px solid rgba(0,200,255,.45);border-radius:16px;padding:14px;text-align:center;margin-bottom:12px;}
+.ice-title{font-family:'Fredoka One';font-size:1.3rem;color:var(--ice);text-shadow:0 0 16px var(--ice);}
+
+/* BATTLE SCREEN */
+#s-battle{background:radial-gradient(ellipse at 50% 20%,rgba(255,100,0,.12),transparent 60%);}
+.battle-header{text-align:center;margin-bottom:14px;}
+.battle-title{font-family:'Fredoka One';font-size:1.4rem;background:linear-gradient(120deg,#ff8800,#ffcc00,#ff4400);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.battle-sub{font-size:.76rem;color:var(--text2);}
+
+/* BATTLE ARENA */
+.battle-arena{background:linear-gradient(135deg,rgba(30,10,0,.8),rgba(60,20,0,.4));border:2px solid rgba(255,100,0,.35);border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden;}
+.arena-bg{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,80,0,.03) 40px,rgba(255,80,0,.03) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,80,0,.03) 40px,rgba(255,80,0,.03) 41px);pointer-events:none;}
+.battle-field{display:grid;grid-template-columns:1fr 60px 1fr;align-items:center;gap:12px;margin-bottom:16px;}
+.fighter-side{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.fighter-emoji{font-size:4.5rem;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transition:all .3s;}
+.fighter-emoji.shake{animation:fshake .4s ease;}
+.fighter-emoji.bounce{animation:fbounce .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes fshake{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(-8px,4px) rotate(-8deg)}75%{transform:translate(8px,-4px) rotate(8deg)}}
+@keyframes fbounce{0%{transform:scale(1)}50%{transform:scale(1.3) translateY(-10px)}100%{transform:scale(1)}}
+.fighter-name{font-family:'Fredoka One';font-size:.88rem;text-align:center;}
+.fighter-rar{font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.8px;text-align:center;}
+.hp-bar-outer{width:100%;height:14px;background:rgba(0,0,0,.4);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+.hp-bar{height:100%;border-radius:10px;transition:width .5s ease;background:linear-gradient(90deg,#44ff88,#00cc44);}
+.hp-bar.mid{background:linear-gradient(90deg,#ffcc00,#ff8800)!important;}
+.hp-bar.low{background:linear-gradient(90deg,#ff4444,#cc0000)!important;}
+.hp-text{font-size:.68rem;color:var(--text2);text-align:center;margin-top:3px;}
+.vs-badge{font-family:'Fredoka One';font-size:1.5rem;color:#ff8800;text-shadow:0 0 12px #ff880088;text-align:center;}
+
+/* BATTLE LOG */
+.battle-log{background:rgba(0,0,0,.4);border:1px solid rgba(255,100,0,.2);border-radius:12px;padding:10px 12px;max-height:130px;overflow-y:auto;margin-bottom:12px;font-size:.74rem;color:var(--text2);}
+.battle-log::-webkit-scrollbar{width:3px;}.battle-log::-webkit-scrollbar-thumb{background:rgba(255,100,0,.3);}
+.log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.log-entry:last-child{border:none;}
+.log-player{color:#44ff88;font-weight:800;}
+.log-bot{color:#ff4444;font-weight:800;}
+.log-crit{color:#ffcc00;font-weight:900;}
+.log-miss{color:#888;}
+
+/* BATTLE CONTROLS */
+.battle-moves{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.move-btn{padding:10px 8px;border:none;border-radius:12px;font-family:'Fredoka One';font-size:.82rem;cursor:pointer;transition:all .2s;text-align:center;}
+.move-btn:hover{transform:translateY(-2px);filter:brightness(1.15);}
+.move-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;filter:none;}
+.mv-atk{background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;}
+.mv-heavy{background:linear-gradient(135deg,#ff8800,#cc4400);color:#fff;}
+.mv-skill{background:linear-gradient(135deg,#4499ff,#0055cc);color:#fff;}
+.mv-heal{background:linear-gradient(135deg,#44ff88,#00aa44);color:#001a0d;}
+
+/* BOT SELECTOR */
+.bot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:14px;}
+.bot-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 8px;text-align:center;cursor:pointer;transition:all .2s;}
+.bot-card:hover{transform:translateY(-2px);border-color:#ff8800;}
+.bot-card.selected{border-color:#ff8800;background:rgba(255,100,0,.12);}
+.bot-emoji{font-size:2.5rem;display:block;margin-bottom:4px;}
+.bot-name{font-size:.72rem;font-weight:800;margin-bottom:2px;}
+.bot-diff{font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.7px;}
+.bot-reward{font-size:.6rem;color:#ffd700;margin-top:3px;}
+
+/* BATTLE RESULT */
+.battle-result{text-align:center;padding:18px;background:rgba(0,0,0,.3);border:1px solid rgba(255,100,0,.3);border-radius:14px;margin-bottom:12px;}
+.result-title{font-family:'Fredoka One';font-size:1.4rem;margin-bottom:6px;}
+.result-reward{font-size:.82rem;color:#ffd700;margin-bottom:10px;}
+
+/* PET SELECTOR FOR BATTLE */
+.pet-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:8px;max-height:220px;overflow-y:auto;margin-bottom:10px;}
+.ps-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 5px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.ps-card:hover{border-color:#ff8800;}
+.ps-card.sel{border-color:#ff8800;background:rgba(255,100,0,.12);}
+.ps-em{font-size:1.7rem;display:block;}
+.ps-nm{font-size:.6rem;font-weight:800;}
+.ps-pwr{font-size:.58rem;color:#ff8800;font-weight:700;}
+
+/* STATS */
+#s-stats{padding:11px;max-width:520px;margin:0 auto;}
+.statt{font-family:'Fredoka One';font-size:1.1rem;background:linear-gradient(120deg,#4499ff,#bb44ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.srl{color:var(--text2);font-size:.78rem;}.srv{font-weight:800;font-size:.83rem;}
+
+/* MODALS */
+.ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.mo{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:20px 24px;max-width:310px;width:92%;text-align:center;animation:pop .35s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;}
+.mo-cu{background:linear-gradient(135deg,rgba(35,0,75,.97),rgba(60,0,130,.97))!important;border-color:rgba(153,68,255,.65)!important;}
+.mo-ice{background:linear-gradient(135deg,rgba(0,20,60,.97),rgba(0,50,100,.97))!important;border-color:rgba(0,200,255,.55)!important;}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.rl{font-size:.72rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.rani{font-size:4.2rem;line-height:1;margin:6px 0;animation:fl 2s ease-in-out infinite;}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.rnm{font-family:'Fredoka One';font-size:1.2rem;margin-bottom:3px;}
+.rrar{font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.rval{font-size:.82rem;color:#ffd700;font-weight:800;margin-bottom:3px;}
+.rdup{background:rgba(102,255,204,.1);border:1px solid rgba(102,255,204,.3);border-radius:8px;padding:5px;font-size:.72rem;color:#66ffcc;margin:5px 0;}
+.rbtns{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
+.rb{flex:1;min-width:65px;padding:7px;border:none;border-radius:9px;font-family:'Fredoka One';font-size:.78rem;cursor:pointer;transition:all .2s;}
+.rb.kp{background:linear-gradient(135deg,#44ff88,#00cc66);color:#001a0d;}
+.rb.sv{background:linear-gradient(135deg,#ff5533,#cc2200);color:#fff;}
+.rb.eq{background:linear-gradient(135deg,#4499ff,#0044cc);color:#fff;}
+.rb.cl{background:var(--card2);border:1px solid var(--border);color:var(--text);}
+.rb:hover{filter:brightness(1.15);}
+.pem{font-size:3.5rem;display:block;margin-bottom:4px;}
+.pnm2{font-family:'Fredoka One';font-size:1.1rem;margin-bottom:2px;}
+.prar2{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;}
+.pst{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;text-align:left;}
+.ps{background:rgba(0,0,0,.25);border-radius:7px;padding:5px 8px;}
+.psl{font-size:.58rem;color:var(--text2);}.psv{font-size:.76rem;font-weight:800;}
+.pbtns{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* GLOWS */
+.g-ultra{box-shadow:0 0 28px rgba(0,238,255,.5);animation:gU 2s ease-in-out infinite;}
+.g-colossal{box-shadow:0 0 32px rgba(255,136,0,.55);animation:gC 2s ease-in-out infinite;}
+.g-godly{box-shadow:0 0 36px rgba(255,221,0,.6);animation:gG 2s ease-in-out infinite;}
+.g-admin{box-shadow:0 0 42px rgba(255,0,85,.7);animation:gA 1.5s ease-in-out infinite;}
+@keyframes gU{0%,100%{box-shadow:0 0 20px rgba(0,238,255,.4)}50%{box-shadow:0 0 48px rgba(0,238,255,.8)}}
+@keyframes gC{0%,100%{box-shadow:0 0 22px rgba(255,136,0,.45)}50%{box-shadow:0 0 52px rgba(255,136,0,.85)}}
+@keyframes gG{0%,100%{box-shadow:0 0 26px rgba(255,221,0,.5)}50%{box-shadow:0 0 58px rgba(255,221,0,.95)}}
+@keyframes gA{0%,100%{box-shadow:0 0 35px rgba(255,0,85,.6)}50%{box-shadow:0 0 70px rgba(255,0,85,.95)}}
+
+/* FI */
+.fi{position:fixed;pointer-events:none;z-index:400;font-family:'Fredoka One';font-size:.88rem;color:#ffd700;text-shadow:0 0 7px #ffcc0099;animation:fu 1.4s ease forwards;}
+@keyframes fu{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-65px)}}
+.fi-cu{color:var(--cu)!important;text-shadow:0 0 7px var(--cu)!important;}
+.fi-ice{color:var(--ice)!important;text-shadow:0 0 7px var(--ice)!important;}
+.fi-dmg{color:#ff4444!important;text-shadow:0 0 7px #ff444499!important;}
+#cc{position:fixed;inset:0;pointer-events:none;z-index:200;}
+#toast{position:fixed;bottom:calc(var(--tab)+10px);left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:7px 17px;font-weight:800;font-size:.78rem;z-index:500;transition:transform .3s;white-space:nowrap;max-width:86vw;}
+#toast.on{transform:translateX(-50%) translateY(0);}
+#toast.tcu{background:rgba(50,0,120,.95)!important;border-color:var(--cu)!important;color:var(--cu)!important;}
+#toast.tice{background:rgba(0,30,80,.95)!important;border-color:var(--ice)!important;color:var(--ice)!important;}
+.dv{height:1px;background:rgba(255,255,255,.07);margin:9px 0;}
+.sec-h{font-family:'Fredoka One';font-size:.85rem;color:var(--text2);margin-bottom:8px;}
+@media(max-width:640px){
+  #s-spin.on,#s-icemap.on,#s-shop.on{grid-template-columns:1fr;}
+}
+/* BATTLE ATTACK FLASH */
+.atk-flash{position:fixed;inset:0;pointer-events:none;z-index:250;border-radius:0;opacity:0;transition:opacity .1s;}
+</style>
+</head>
+<body>
+<div class="uprib"><span>UPDATE 1</span></div>
+<canvas id="cc"></canvas>
+<div id="purge-overlay"></div>
+<div id="purge-msg">☠️ MODO PURGA ATIVO ☠️<br><span style="font-size:1.2rem;color:#ff6666" id="purge-timer-txt">5:00</span><br><span style="font-size:.85rem;color:#ff9999">Tudo amaldiçoado removido temporariamente</span></div>
+<div id="purge-timer-bar-wrap"><div id="purge-timer-bar" style="width:100%"></div></div>
+<div class="atk-flash" id="atk-flash"></div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo" id="logo-txt">🎰 Animal Roulette</div>
+  <div class="topstats">
+    <div class="badge">💰<span class="gv" id="ng">500</span></div>
+    <div class="badge">💎<span class="fv" id="nf">0</span></div>
+    <div class="badge" id="cf-badge" style="display:none">☠️<span class="cv" id="ncf">0</span></div>
+    <div class="mode-badge mb-ice" id="map-badge" style="display:none">❄️ Gelo</div>
+    <div class="mode-badge mb-purge" id="purge-badge" style="display:none">⛔ PURGA</div>
+  </div>
+</div>
+
+<!-- MUSIC BAR -->
+<div id="music-bar">
+  <button class="music-btn" id="play-btn" onclick="togglePlay()">▶ Play</button>
+  <button class="music-btn" id="next-btn" onclick="nextTrack()">⏭</button>
+  <span class="music-title" id="track-name">🎵 Nenhuma faixa</span>
+  <div id="music-prog" onclick="seekMusic(event)"><div id="music-prog-bar" style="width:0%"></div></div>
+  <span style="font-size:.65rem;color:var(--text2)">Vol</span>
+  <input type="range" class="music-vol" id="vol-slider" min="0" max="1" step="0.05" value="0.5" oninput="setVol(this.value)">
+</div>
+
+<!-- SPIN -->
+<div class="sc" id="s-spin">
+  <div class="sl">
+    <div class="ww" id="ww">
+      <div class="wring" id="wring"><canvas id="wc"></canvas></div>
+      <div class="ndl" id="ndl"></div><div class="cdot"></div>
+    </div>
+    <div class="mrow" id="mrow">
+      <button class="mbtn mbtn-n on" id="mbn" onclick="setMode('normal')">🎰 Normal</button>
+      <button class="mbtn mbtn-c" id="mbc" onclick="setMode('cursed')">☠️ Amaldiçoado</button>
+    </div>
+    <button class="spbtn spbtn-n" id="spbtn" onclick="spin()">🎰 GIRAR!</button>
+    <div class="scost" id="scost">Custo: <span style="color:#ffd700">💰 100</span></div>
+    <div class="cbox"><div class="ctit" id="ctit">⚡ Chances</div><div id="ct"></div></div>
+  </div>
+  <div class="sr">
+    <div class="pnl" id="evt-banner" style="display:none"><div class="pt" id="evt-title">🎉 Evento!</div><div style="font-size:.68rem;color:var(--text2)" id="evt-desc2"></div></div>
+    <div class="pnl pnl-cu" id="cursed-info" style="display:none">
+      <div class="pt ptcu">☠️ Modo Amaldiçoado</div>
+      <div style="font-size:.7rem;color:#cc88ff;margin-bottom:5px">Custo: <b>10.000 💎 frags/giro</b><br>Drops: Mítico+ · chance de ☠️ frags</div>
+    </div>
+    <div class="pnl"><div class="pt ptg">⭐ Sorte <span id="lvb">Lv.1</span></div><div class="lbw"><div class="lb" id="lb" style="width:5%"></div></div><div class="li"><span>Sorte: <b id="lvn">1</b>/20</span><span id="lvc" style="color:#ffd700"></span></div><button class="xbtn xg" id="lbtn" onclick="upLuck()">✨ Melhorar</button></div>
+    <div class="pnl"><div class="pt ptt">🐾 Pets <span id="slbl" style="font-size:.65rem;color:var(--text2)">1/1</span></div><div class="slts" id="slgrid"></div><button class="xbtn xt" id="slbtn" onclick="unlockSlot()">🔓 Desbloquear Slot</button></div>
+    <div class="pnl"><div class="pt ptgr">💸 Renda Passiva</div><div class="bign" id="incd">💰 0/s</div><div class="sub">Total: <span style="color:#ffd700" id="totle">0</span></div></div>
+    <div class="pnl"><div class="pt" style="color:#aaa">🎰 Giros</div><div class="bign" id="spinctr">0</div></div>
+  </div>
+</div>
+
+<!-- COLLECTION -->
+<div class="sc" id="s-coll"><div class="ch"><div class="stl">📚 Coleção</div><div id="cprog" style="font-size:.72rem;color:var(--text2)"></div></div><div class="fils" id="fils"></div><div class="agrid" id="agrid"></div></div>
+
+<!-- SHOP -->
+<div class="sc" id="s-shop">
+  <div>
+    <div class="shtl" id="shop-title-el">🏪 Loja</div>
+    <div class="stmr">🔄 <b id="stv">5:00</b><div class="tbw"><div class="tbar" id="tbar" style="width:100%"></div></div></div>
+    <div id="shop-cursed-section"></div>
+    <div class="sgrd" id="sgrd"></div>
+  </div>
+  <div class="cpp">
+    <div class="pt" style="color:#ff44cc;margin-bottom:7px">✨ Customizar</div>
+    <select id="csel" onchange="updCust()"><option value="">-- Pet --</option></select>
+    <div class="cpv" id="cpv"><span style="font-size:1.7rem">🐾</span><span style="color:var(--text2);font-size:.68rem">Nenhum</span></div>
+    <input id="cnm" type="text" placeholder="Nome..." maxlength="20">
+    <div class="orow" id="orow"></div>
+    <button class="xbtn xp" onclick="apCust()">💅 Aplicar</button>
+  </div>
+</div>
+
+<!-- CURSED -->
+<div class="sc" id="s-cursed">
+  <div class="cbanner"><div class="ctitle ctext">☠️ MUNDO AMALDIÇOADO ☠️</div><div class="csub">Update 1 — O lado sombrio do jogo</div></div>
+  <!-- PURGE INFO -->
+  <div style="background:rgba(150,0,0,.2);border:1px solid rgba(255,50,50,.4);border-radius:13px;padding:13px;margin-bottom:13px;text-align:center">
+    <div style="font-family:'Fredoka One';font-size:.9rem;color:#ff4444;margin-bottom:5px">⛔ MODO PURGA</div>
+    <div style="font-size:.72rem;color:#ffaaaa;margin-bottom:8px">Ative a Purga por 5 minutos: <b>remove tudo amaldiçoado do jogo</b> — giro cursed, loja cursed, tudo! Útil para quem quer jogar "limpo" por um tempo.</div>
+    <button class="xbtn" style="background:linear-gradient(135deg,#ff0000,#880000);color:#fff;max-width:250px;margin:0 auto;display:block" id="purge-btn" onclick="activatePurge()">⛔ Ativar Modo Purga (5 min)</button>
+    <div id="purge-status" style="font-size:.7rem;color:#ff9999;margin-top:5px"></div>
+  </div>
+  <div class="cfrow"><div class="cfbox"><div class="cfval" style="color:#66ffcc" id="cf-norm-disp">0</div><div class="cflbl">💎 Frags Normais</div></div><div class="cfbox"><div class="cfval" style="color:var(--cu)" id="cf-curs-disp">0</div><div class="cflbl">☠️ Frags Malditos</div></div></div>
+  <div class="sec-h">🔄 Câmbio</div>
+  <div class="exgrid">
+    <div class="excard"><div class="exctit">100k 💎 → 100 ☠️</div><div class="exv">Troca pequena</div><button class="xbtn xcu" onclick="exchange100k()">Trocar</button></div>
+    <div class="excard"><div class="exctit">1M 💎 → 1000 ☠️</div><div class="exv">Troca grande</div><button class="xbtn xcu" onclick="exchange1m()">Trocar</button></div>
+    <div class="excard"><div class="exctit">10 ☠️ → 1 giro ☠️</div><div class="exv">Giros pré-pagos</div><button class="xbtn xcu" onclick="buyCSpin(1)">Comprar</button></div>
+    <div class="excard"><div class="exctit">90 ☠️ → 10 giros ☠️</div><div class="exv">Pacote econômico</div><button class="xbtn xcu" onclick="buyCSpin(10)">Comprar</button></div>
+  </div>
+  <div style="font-size:.7rem;color:#cc88ff;margin-bottom:9px">Giros ☠️ comprados: <b style="color:var(--cu)" id="stored-cs">0</b></div>
+  <div class="dv"></div>
+  <div class="sec-h">👑 Pets Admin</div>
+  <div style="margin-bottom:10px"><div class="puzz-outer"><div class="puzz-bar" id="puzz-bar" style="width:0%"></div></div><div class="puzz-info"><span id="puzz-txt">0 / 1.000.000 ☠️</span><span id="puzz-pct">0%</span></div></div>
+  <div class="adm-cards">
+    <div class="admc"><span class="adme">🐱</span><div class="admn">Cappu</div><div style="font-size:.58rem;color:#ff4488;font-weight:900;letter-spacing:1px;margin-bottom:3px">⚙️ ADMIN</div><div class="admi">💰 10⁴⁰/s</div><div class="admr">1.000.000 ☠️ frags</div><button class="clm-btn" id="cappu-btn" onclick="claimAdmin('cappu')" disabled>🔒 Bloqueado</button></div>
+    <div class="admc"><span class="adme">🐉</span><div class="admn">Draxen</div><div style="font-size:.58rem;color:#ff4488;font-weight:900;letter-spacing:1px;margin-bottom:3px">⚙️ ADMIN</div><div class="admi">💰 10⁴⁰/s</div><div class="admr">1.000.000 ☠️ frags</div><button class="clm-btn" id="draxen-btn" onclick="claimAdmin('draxen')" disabled>🔒 Bloqueado</button></div>
+  </div>
+  <div class="dv"></div>
+  <div class="sec-h">❄️ Mapa de Gelo</div>
+  <div style="background:rgba(0,80,160,.22);border:1px solid rgba(0,180,255,.32);border-radius:13px;padding:13px;margin-bottom:12px">
+    <div style="font-size:.76rem;color:#88ddff;margin-bottom:7px">Troque <b style="color:var(--cu)">1.000.000 ☠️</b> por acesso ao <b style="color:var(--ice)">Mapa de Gelo</b> — todos os pets com <b>5x mais renda</b>!</div>
+    <div style="font-size:.7rem;color:#ff9999;margin-bottom:7px">⚠️ Você perde todos seus pets atuais ao entrar!</div>
+    <button class="xbtn xice" id="ice-access-btn" onclick="tryEnterIce()">❄️ Acessar (1M ☠️)</button>
+  </div>
+  <div class="cgrid">
+    <div class="ccard"><div class="cctit">🎰 Giro ☠️</div><div style="font-size:.7rem;color:#cc88ff">Custa 10.000 💎/giro. Dropa Mítico+. 30% chance de ☠️ frags!</div></div>
+    <div class="ccard"><div class="cctit">🏪 Loja ☠️</div><div style="font-size:.7rem;color:#cc88ff">20% chance ao atualizar. Dura 5 min. Troque frags!</div></div>
+    <div class="ccard"><div class="cctit">⛔ Purga</div><div style="font-size:.7rem;color:#cc88ff">5 minutos sem nada amaldiçoado. Se precisar, ative!</div></div>
+  </div>
+</div>
+
+<!-- ICE MAP -->
+<div class="sc" id="s-icemap">
+  <div class="sl">
+    <div class="ice-header" style="width:100%;max-width:340px"><div class="ice-title itext">❄️ Mapa de Gelo</div><div style="font-size:.72rem;color:#88ddff">5x mais renda por pet!</div></div>
+    <div class="ww" id="wwice">
+      <div class="wring" style="box-shadow:0 0 40px rgba(0,200,255,.35)"><canvas id="wcice"></canvas></div>
+      <div class="ndl" style="border-top-color:#00ccff;filter:drop-shadow(0 2px 5px #00ccffaa)"></div>
+      <div class="cdot" style="background:radial-gradient(circle,#fff 0%,#00ccff 60%,#006699 100%);box-shadow:0 0 12px #00ccff99"></div>
+    </div>
+    <button class="spbtn spbtn-i" id="ice-spbtn" onclick="spinIce()">❄️ GIRAR!</button>
+    <div class="scost" id="ice-scost">Custo: <span style="color:var(--ice)">💰 100</span></div>
+    <div class="cbox" style="border-color:rgba(0,180,255,.3)"><div class="ctit" style="color:var(--ice)">❄️ Chances</div><div id="ict"></div></div>
+  </div>
+  <div class="sr">
+    <div class="pnl pnl-ice"><div class="pt ptice">❄️ Mapa de Gelo</div><div style="font-size:.7rem;color:#88ddff;margin-bottom:7px">Pets glaciais com 5x de renda!</div><button class="xbtn" style="background:rgba(255,50,50,.15);border:1px solid rgba(255,80,80,.35);color:#ff6666" onclick="leaveIce()">⬅️ Voltar ao Normal</button></div>
+    <div class="pnl"><div class="pt ptg">⭐ Sorte <span id="ice-lvb">Lv.1</span></div><div class="lbw"><div class="lb lbice" id="icelb" style="width:5%"></div></div><div class="li"><span>Sorte: <b id="ice-lvn">1</b>/20</span><span id="ice-lvc" style="color:var(--ice)"></span></div><button class="xbtn xice" id="ice-lbtn" onclick="upLuckIce()">✨ Melhorar</button></div>
+    <div class="pnl"><div class="pt ptice">🐾 Pets Gelo <span id="ice-slbl" style="font-size:.65rem;color:var(--text2)">1/1</span></div><div class="slts" id="ice-slgrid"></div><button class="xbtn xice" id="ice-slbtn" onclick="unlockSlotIce()">🔓 Slot</button></div>
+    <div class="pnl"><div class="pt ptice">💸 Renda Gelo</div><div class="bign" style="color:var(--ice)" id="ice-incd">❄️ 0/s</div><div class="sub">Total: <span style="color:var(--ice)" id="ice-totle">0</span></div></div>
+    <div class="pnl"><div class="pt ptice">🎰 Giros</div><div class="bign" style="color:var(--ice)" id="ice-spinctr">0</div></div>
+  </div>
+</div>
+
+<!-- BATTLE -->
+<div class="sc" id="s-battle">
+  <div class="battle-header">
+    <div class="battle-title">⚔️ Arena de Batalha</div>
+    <div class="battle-sub">Use seus melhores pets para lutar contra bots!</div>
+  </div>
+  <!-- BATTLE STATE: lobby | select-pet | fighting | result -->
+  <div id="battle-lobby">
+    <div style="font-family:'Fredoka One';font-size:.9rem;color:#ff8800;margin-bottom:10px">🤖 Escolha seu Oponente</div>
+    <div class="bot-grid" id="bot-grid"></div>
+    <div style="font-family:'Fredoka One';font-size:.9rem;color:#ff8800;margin-bottom:8px;margin-top:4px">🐾 Escolha seu Pet</div>
+    <div class="pet-select-grid" id="pet-select-grid"></div>
+    <button class="xbtn" style="background:linear-gradient(135deg,#ff8800,#cc4400);color:#fff;max-width:300px;margin:0 auto;display:block" id="start-battle-btn" onclick="startBattle()">⚔️ LUTAR!</button>
+  </div>
+  <div id="battle-screen" style="display:none">
+    <div class="battle-arena">
+      <div class="arena-bg"></div>
+      <div class="battle-field">
+        <div class="fighter-side">
+          <span class="fighter-emoji" id="p-emoji">🐶</span>
+          <div class="fighter-name" id="p-name">Seu Pet</div>
+          <div class="fighter-rar" id="p-rar">Comum</div>
+          <div class="hp-bar-outer"><div class="hp-bar" id="p-hp-bar" style="width:100%"></div></div>
+          <div class="hp-text" id="p-hp-txt">HP: 100/100</div>
+        </div>
+        <div class="vs-badge">⚔️</div>
+        <div class="fighter-side">
+          <span class="fighter-emoji" id="b-emoji">🤖</span>
+          <div class="fighter-name" id="b-name">Bot</div>
+          <div class="fighter-rar" id="b-rar">---</div>
+          <div class="hp-bar-outer"><div class="hp-bar" id="b-hp-bar" style="width:100%"></div></div>
+          <div class="hp-text" id="b-hp-txt">HP: 100/100</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:8px">
+        <span style="font-size:.72rem;color:var(--text2)">Turno: </span>
+        <span style="font-family:'Fredoka One';font-size:.85rem;color:#ff8800" id="battle-turn-txt">Seu turno!</span>
+      </div>
+    </div>
+    <div class="battle-log" id="battle-log"></div>
+    <div class="battle-moves" id="battle-moves">
+      <button class="move-btn mv-atk" onclick="doMove('atk')">⚔️ Atacar<br><span style="font-size:.65rem;opacity:.8">Dano normal</span></button>
+      <button class="move-btn mv-heavy" onclick="doMove('heavy')">💥 Golpe Pesado<br><span style="font-size:.65rem;opacity:.8">Alto dano, pode errar</span></button>
+      <button class="move-btn mv-skill" onclick="doMove('skill')">✨ Habilidade<br><span style="font-size:.65rem;opacity:.8">Baseada na raridade</span></button>
+      <button class="move-btn mv-heal" onclick="doMove('heal')">💊 Curar<br><span style="font-size:.65rem;opacity:.8">Recupera HP</span></button>
+    </div>
+  </div>
+  <div id="battle-result-screen" style="display:none">
+    <div class="battle-result">
+      <div class="result-title" id="battle-result-title">🎉 Vitória!</div>
+      <div class="result-reward" id="battle-result-reward">💰 +5000 ouro</div>
+      <button class="xbtn xg" onclick="resetBattle()" style="max-width:200px;margin:0 auto;display:block">🔄 Lutar Novamente</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="sc" id="s-stats"><div class="statt">📊 Estatísticas</div><div id="stbody"></div></div>
+
+<!-- RESULT MODAL -->
+<div class="ov" id="rov"><div class="mo" id="rcard"><div class="rl" id="rlbl">Você ganhou!</div><div class="rani" id="rani">🐶</div><div class="rnm" id="rnm">Animal</div><div class="rrar" id="rrar">Comum</div><div class="rval" id="rval">💰 0/s</div><div class="rdup" id="rdup" style="display:none"></div><div class="rbtns" id="rbtns"></div></div></div>
+<!-- PET MODAL -->
+<div class="ov" id="pov"><div class="mo" id="pcard"><span class="pem" id="pem">🐶</span><div class="pnm2" id="pnm2">Animal</div><div class="prar2" id="prar2">Comum</div><div class="pst" id="pst2"></div><div class="pbtns" id="pbtns2"></div></div></div>
+<!-- ICE CONFIRM -->
+<div class="ov" id="ice-ov"><div class="mo mo-ice"><div style="font-size:3rem;margin-bottom:8px">❄️☠️</div><div style="font-family:'Fredoka One';font-size:1.1rem;color:var(--ice);margin-bottom:7px">Entrar no Mapa de Gelo?</div><div style="font-size:.75rem;color:#88ddff;margin-bottom:5px">Custa 1.000.000 ☠️ frags. Você perde todos seus pets atuais!</div><div style="font-size:.7rem;color:#aaa;margin-bottom:11px">Ouro e fragmentos são mantidos.</div><div style="display:flex;gap:7px"><button class="rb kp" style="background:linear-gradient(135deg,#00ccff,#0066aa);color:#fff" onclick="confirmIce()">❄️ Entrar!</button><button class="rb cl" onclick="document.getElementById('ice-ov').classList.remove('on')">✕ Cancelar</button></div></div></div>
+
+<!-- TABS -->
+<div id="tabs">
+  <button class="tb on" data-tab="spin" onclick="goTab('spin',this)"><span class="i">🎰</span>Girar</button>
+  <button class="tb" data-tab="coll" onclick="goTab('coll',this)"><span class="i">📚</span>Coleção</button>
+  <button class="tb" data-tab="shop" onclick="goTab('shop',this)"><span class="i">🏪</span>Loja</button>
+  <button class="tb ctab" data-tab="cursed" onclick="goTab('cursed',this)"><span class="i">☠️</span>Maldito</button>
+  <button class="tb ictab" data-tab="icemap" onclick="goTab('icemap',this)" id="ice-tab" style="display:none"><span class="i">❄️</span>Gelo</button>
+  <button class="tb btab" data-tab="battle" onclick="goTab('battle',this)"><span class="i">⚔️</span>Batalha</button>
+  <button class="tb" data-tab="stats" onclick="goTab('stats',this)"><span class="i">📊</span>Stats</button>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════
+   MUSIC ENGINE
+════════════════════════════════════ */
+const TRACKS = [
+  { name:'🎮 Epic Adventure', gen: () => genTrack('epic') },
+  { name:'🌙 Night Mystery',  gen: () => genTrack('mystery') },
+  { name:'⚔️ Battle Theme',   gen: () => genTrack('battle') },
+  { name:'❄️ Ice World',      gen: () => genTrack('ice') },
+  { name:'☠️ Cursed Realm',   gen: () => genTrack('cursed') },
+];
+let audioCtx = null, gainNode = null, currentTrackIdx = 0, trackSources = [], isPlaying = false, trackStartTime = 0, trackDuration = 30;
+let musicProgInterval = null;
+
+function getAudioCtx() {
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); gainNode = audioCtx.createGain(); gainNode.connect(audioCtx.destination); gainNode.gain.value = 0.5; }
+  return audioCtx;
+}
+
+function genTrack(type) {
+  const ctx = getAudioCtx();
+  const dur = 30;
+  const buf = ctx.createBuffer(2, ctx.sampleRate * dur, ctx.sampleRate);
+  const themes = {
+    epic:    { bpm:128, scale:[0,2,4,7,9], rootHz:220, bass:55, mood:0.7 },
+    mystery: { bpm:80,  scale:[0,1,5,7,8], rootHz:185, bass:46, mood:0.4 },
+    battle:  { bpm:160, scale:[0,3,5,7,10],rootHz:260, bass:65, mood:0.9 },
+    ice:     { bpm:90,  scale:[0,2,4,6,9], rootHz:200, bass:50, mood:0.3 },
+    cursed:  { bpm:100, scale:[0,1,3,6,8], rootHz:165, bass:41, mood:0.6 },
+  };
+  const t = themes[type] || themes.epic;
+  const sr = ctx.sampleRate;
+  const beatLen = (60 / t.bpm) * sr;
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < d.length; i++) {
+      const beat = Math.floor(i / beatLen);
+      const beatPos = (i % beatLen) / beatLen;
+      const noteIdx = (beat * 2 + (ch === 1 ? 3 : 0)) % t.scale.length;
+      const semitone = t.scale[noteIdx];
+      const freq = t.rootHz * Math.pow(2, semitone / 12);
+      // Melody
+      let s = Math.sin(2 * Math.PI * freq * i / sr) * 0.15 * Math.max(0, 1 - beatPos * 2);
+      // Bass
+      s += Math.sin(2 * Math.PI * t.bass * i / sr) * 0.08 * (beatPos < 0.1 ? 1 : 0.3);
+      // Pad/atmosphere
+      const padFreq = t.rootHz * 0.75;
+      s += Math.sin(2 * Math.PI * padFreq * i / sr + Math.sin(i / sr * 3) * 0.5) * 0.06 * t.mood;
+      // Percussion (hi-hat)
+      if (beatPos < 0.05) s += (Math.random() * 2 - 1) * 0.12;
+      // Kick on beat 1 & 3
+      const subBeat = beat % 4;
+      if ((subBeat === 0 || subBeat === 2) && beatPos < 0.08) s += Math.sin(2 * Math.PI * 80 * i / sr) * 0.2 * Math.max(0, 1 - beatPos * 15);
+      d[i] = Math.tanh(s * 1.8); // soft saturation
+    }
+  }
+  return buf;
+}
+
+function playTrack(idx) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  trackSources.forEach(s => { try { s.stop(); } catch(e){} });
+  trackSources = [];
+  const buf = TRACKS[idx].gen();
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(gainNode);
+  src.start();
+  trackSources.push(src);
+  isPlaying = true;
+  trackStartTime = Date.now();
+  trackDuration = 30000;
+  document.getElementById('play-btn').textContent = '⏸ Pause';
+  document.getElementById('track-name').textContent = TRACKS[idx].name;
+  clearInterval(musicProgInterval);
+  musicProgInterval = setInterval(() => {
+    const elapsed = (Date.now() - trackStartTime) % trackDuration;
+    document.getElementById('music-prog-bar').style.width = (elapsed / trackDuration * 100) + '%';
+  }, 500);
+}
+function togglePlay() {
+  const ctx = getAudioCtx();
+  if (isPlaying) {
+    trackSources.forEach(s => { try { s.stop(); } catch(e){} });
+    trackSources = []; isPlaying = false;
+    document.getElementById('play-btn').textContent = '▶ Play';
+  } else { playTrack(currentTrackIdx); }
+}
+function nextTrack() { currentTrackIdx = (currentTrackIdx + 1) % TRACKS.length; if (isPlaying) playTrack(currentTrackIdx); else { document.getElementById('track-name').textContent = TRACKS[currentTrackIdx].name; } }
+function setVol(v) { if (gainNode) gainNode.gain.value = parseFloat(v); }
+function seekMusic(e) { /* visual only */ }
+
+/* ════════════════════════════════════
+   DATA
+════════════════════════════════════ */
+const RARS = [
+  {id:'common',   l:'Comum',    c:'#aaaaaa',w:'#555',   ch:55},
+  {id:'rare',     l:'Raro',     c:'#4499ff',w:'#1144bb',ch:25},
+  {id:'epic',     l:'Épico',    c:'#bb44ff',w:'#6611bb',ch:12},
+  {id:'mythic',   l:'Mítico',   c:'#ff6644',w:'#aa3311',ch:5},
+  {id:'legendary',l:'Lendário', c:'#ffcc00',w:'#aa8800',ch:2},
+  {id:'secret',   l:'Secreto',  c:'#ff44cc',w:'#aa1177',ch:1},
+  {id:'ultra',    l:'Ultra',    c:'#00eeff',w:'#007799',ch:1},
+  {id:'colossal', l:'Colossal', c:'#ff8800',w:'#994400',ch:0.7},
+  {id:'godly',    l:'Deus',     c:'#ffdd00',w:'#886600',ch:0.5},
+  {id:'admin',    l:'Admin',    c:'#ff0055',w:'#880022',ch:0,adminOnly:true},
+];
+function blendIce(hex){let r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;r=Math.min(255,Math.floor(r*.25+0));g=Math.min(255,Math.floor(g*.4+160));b=Math.min(255,Math.floor(b*.3+220));return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;}
+function dk(hex,a){let r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;return`#${Math.floor(r*a).toString(16).padStart(2,'0')}${Math.floor(g*a).toString(16).padStart(2,'0')}${Math.floor(b*a).toString(16).padStart(2,'0')}`;}
+const ICE_RARS = RARS.filter(r=>!r.adminOnly).map(r=>({...r,id:'ice_'+r.id,l:'❄️'+r.l,c:blendIce(r.c),w:dk(blendIce(r.c),.5)}));
+
+const BASE_AN = [
+  {id:'dog',e:'🐶',n:'Cachorrinho',r:'common',i:5,p:100},{id:'cat',e:'🐱',n:'Gatinho',r:'common',i:6,p:120},
+  {id:'rabbit',e:'🐰',n:'Coelhinho',r:'common',i:7,p:140},{id:'hamster',e:'🐹',n:'Hamster',r:'common',i:5,p:100},
+  {id:'chick',e:'🐤',n:'Pintinho',r:'common',i:4,p:80},{id:'turtle',e:'🐢',n:'Tartaruga',r:'common',i:3,p:60},
+  {id:'fish',e:'🐟',n:'Peixinho',r:'common',i:5,p:100},{id:'snail',e:'🐌',n:'Caracol',r:'common',i:2,p:40},
+  {id:'frog',e:'🐸',n:'Sapo',r:'common',i:6,p:120},{id:'bug',e:'🐞',n:'Joaninha',r:'common',i:4,p:80},
+  {id:'fox',e:'🦊',n:'Raposa',r:'rare',i:25,p:500},{id:'panda',e:'🐼',n:'Panda',r:'rare',i:30,p:600},
+  {id:'koala',e:'🐨',n:'Coala',r:'rare',i:28,p:560},{id:'penguin',e:'🐧',n:'Pinguim',r:'rare',i:22,p:440},
+  {id:'dolphin',e:'🐬',n:'Golfinho',r:'rare',i:35,p:700},{id:'parrot',e:'🦜',n:'Arara',r:'rare',i:27,p:540},
+  {id:'deer',e:'🦌',n:'Cervo',r:'rare',i:24,p:480},{id:'hedge',e:'🦔',n:'Porco-Espinho',r:'rare',i:20,p:400},
+  {id:'otter',e:'🦦',n:'Lontra',r:'rare',i:32,p:640},{id:'raccoon',e:'🦝',n:'Guaxinim',r:'rare',i:26,p:520},
+  {id:'tiger',e:'🐯',n:'Tigre',r:'epic',i:80,p:2000},{id:'lion',e:'🦁',n:'Leão',r:'epic',i:90,p:2200},
+  {id:'elephant',e:'🐘',n:'Elefante',r:'epic',i:75,p:1800},{id:'gorilla',e:'🦍',n:'Gorila',r:'epic',i:85,p:2100},
+  {id:'shark',e:'🦈',n:'Tubarão',r:'epic',i:100,p:2500},{id:'eagle',e:'🦅',n:'Águia',r:'epic',i:70,p:1750},
+  {id:'wolf',e:'🐺',n:'Lobo',r:'epic',i:88,p:2200},{id:'bear',e:'🐻',n:'Urso',r:'epic',i:78,p:1950},
+  {id:'croc',e:'🐊',n:'Crocodilo',r:'epic',i:95,p:2400},{id:'octopus',e:'🐙',n:'Polvo',r:'epic',i:72,p:1800},
+  {id:'dragon',e:'🐲',n:'Dragão',r:'mythic',i:250,p:8000},{id:'phoenix',e:'🦚',n:'Fênix',r:'mythic',i:280,p:9000},
+  {id:'narwhal',e:'🦄',n:'Narval',r:'mythic',i:260,p:8500},{id:'manticore',e:'🦂',n:'Manticora',r:'mythic',i:300,p:10000},
+  {id:'griffin',e:'🦁',n:'Grifo',r:'mythic',i:270,p:8800},{id:'kirin',e:'🦒',n:'Kirin',r:'mythic',i:240,p:7800},
+  {id:'hydra',e:'🐍',n:'Hidra',r:'mythic',i:320,p:10500},{id:'chimera',e:'🐉',n:'Quimera',r:'mythic',i:290,p:9500},
+  {id:'basilisk',e:'🦎',n:'Basilisco',r:'mythic',i:310,p:10200},{id:'leviathan',e:'🐳',n:'Leviatã',r:'mythic',i:350,p:11500},
+  {id:'cfox',e:'🦊',n:'Raposa Celestial',r:'legendary',i:800,p:40000},{id:'scat',e:'🐱',n:'Gato Estelar',r:'legendary',i:850,p:42000},
+  {id:'cwolf',e:'🐺',n:'Lobo Cósmico',r:'legendary',i:900,p:45000},{id:'gbird',e:'🦅',n:'Ave Galáctica',r:'legendary',i:820,p:41000},
+  {id:'abear',e:'🐻',n:'Urso Astral',r:'legendary',i:880,p:44000},{id:'vserp',e:'🐍',n:'Serpente do Vazio',r:'legendary',i:950,p:47500},
+  {id:'tlion',e:'🦁',n:'Leão Trovejante',r:'legendary',i:870,p:43500},{id:'idragon',e:'🐲',n:'Dragão de Gelo',r:'legendary',i:1000,p:50000},
+  {id:'tturtle',e:'🐢',n:'Tartaruga do Tempo',r:'legendary',i:920,p:46000},{id:'lphoenix',e:'🦚',n:'Fênix da Luz',r:'legendary',i:960,p:48000},
+  {id:'gbeast',e:'🌟',n:'Besta Divina',r:'secret',i:3000,p:200000},{id:'bhcat',e:'🐈',n:'Gato Buraco Negro',r:'secret',i:3200,p:210000},
+  {id:'uegg',e:'🥚',n:'Ovo do Universo',r:'secret',i:3500,p:230000},{id:'cking',e:'👑',n:'Rei do Caos',r:'secret',i:4000,p:260000},
+  {id:'owolf',e:'🐺',n:'Lobo Ômega',r:'secret',i:3800,p:245000},{id:'ephoenix',e:'🔥',n:'Fênix Eterna',r:'secret',i:4200,p:275000},
+  {id:'cdragon',e:'⚡',n:'Dragão da Criação',r:'secret',i:4500,p:300000},{id:'vqueen',e:'🌑',n:'Rainha do Vazio',r:'secret',i:3600,p:235000},
+  {id:'sguard',e:'💫',n:'Guardião Estelar',r:'secret',i:5000,p:330000},{id:'obeast',e:'🌈',n:'Besta Primordial',r:'secret',i:6000,p:400000},
+  {id:'ay_mi_gatito',e:'😼',n:'Ay Mi Gatito',r:'ultra',i:1000000,p:5000000},
+  {id:'t_rex',e:'🦖',n:'T-Rex',r:'colossal',i:300000000,p:50000000},
+  {id:'guepardo',e:'🐆',n:'Guepardo Divino',r:'godly',i:1000000000,p:500000000},
+  {id:'imbu_time',e:'🦬',n:'No Tempo dos Imbu',r:'ultra',i:2000000,p:8000000},
+  {id:'lone_wolf',e:'🌕',n:'Lobo Solitário',r:'ultra',i:2000000,p:8000000},
+  {id:'cappu',e:'🐱',n:'Cappu',r:'admin',i:'1e40',p:0,adminPet:true},{id:'draxen',e:'🐉',n:'Draxen',r:'admin',i:'1e40',p:0,adminPet:true},
+];
+const ICE_AN = BASE_AN.filter(a=>!a.adminPet).map(a=>({...a,id:'ice_'+a.id,n:'❄️ '+a.n,r:'ice_'+a.r,i:typeof a.i==='string'?a.i:a.i*5,p:typeof a.p==='number'?a.p*5:a.p,isIce:true}));
+const OUTFITS=['👒','🎩','🪖','💎','🌸','⚡','🔥','❄️','🌟','🎭','🏆','🎪'];
+
+/* STATE */
+let S={gold:500,frags:0,cursedFrags:0,luck:1,spins:0,slots:1,equipped:[],owned:{},shop:[],shopSec:300,passive:0,storedCS:0,cursedShopActive:false,cursedShopSec:300,onIce:false,iceLuck:1,iceSpins:0,iceSlots:1,iceEquipped:[],iceOwned:{},icePassive:0,purgeActive:false,purgeSec:0,battleWins:0,battleLosses:0};
+let spinMode='normal';let spinning=false;let shopInt=null;let purgeInt=null;
+
+/* PURGE */
+function activatePurge(){
+  if(S.purgeActive){toast('Purga já ativa!');return;}
+  S.purgeActive=true;S.purgeSec=300;
+  document.body.classList.add('purge-mode');
+  document.getElementById('purge-overlay').classList.add('show');
+  document.getElementById('purge-msg').classList.add('show');
+  document.getElementById('purge-timer-bar-wrap').style.display='block';
+  document.getElementById('purge-badge').style.display='flex';
+  document.getElementById('cf-badge').style.display='none';
+  // Force mode back to normal
+  if(spinMode==='cursed')setMode('normal');
+  // Hide cursed tab
+  document.querySelector('.ctab').style.opacity='.3';
+  document.querySelector('.ctab').style.pointerEvents='none';
+  document.getElementById('mrow').style.display='none';
+  document.getElementById('cursed-info').style.display='none';
+  toast('⛔ PURGA ATIVADA! 5 minutos sem o cursed!','cu');
+  confetti('#ff0000');
+  clearInterval(purgeInt);
+  purgeInt=setInterval(()=>{
+    S.purgeSec--;
+    const m=Math.floor(S.purgeSec/60),s=S.purgeSec%60;
+    document.getElementById('purge-timer-txt').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    document.getElementById('purge-timer-bar').style.width=(S.purgeSec/300*100)+'%';
+    document.getElementById('purge-status').textContent=`Purga ativa: ${m}:${s.toString().padStart(2,'0')} restantes`;
+    if(S.purgeSec<=0){
+      clearInterval(purgeInt);S.purgeActive=false;
+      document.body.classList.remove('purge-mode');
+      document.getElementById('purge-overlay').classList.remove('show');
+      document.getElementById('purge-msg').classList.remove('show');
+      document.getElementById('purge-timer-bar-wrap').style.display='none';
+      document.getElementById('purge-badge').style.display='none';
+      document.getElementById('cf-badge').style.display='flex';
+      document.querySelector('.ctab').style.opacity='1';
+      document.querySelector('.ctab').style.pointerEvents='auto';
+      document.getElementById('mrow').style.display='flex';
+      document.getElementById('purge-status').textContent='';
+      document.getElementById('purge-btn').textContent='⛔ Ativar Modo Purga (5 min)';
+      toast('✅ Purga encerrada! Modo amaldiçoado voltou.','cu');
+    }else{
+      document.getElementById('purge-btn').textContent=`⛔ Purga ativa: ${m}:${s.toString().padStart(2,'0')}`;
+    }
+  },1000);
+}
+
+/* ════ HELPERS ════ */
+function getRar(id){return RARS.find(r=>r.id===id)||RARS[0];}
+function getIceRar(id){return ICE_RARS.find(r=>r.id===id)||ICE_RARS[0];}
+function getAnyRar(id){return RARS.find(r=>r.id===id)||ICE_RARS.find(r=>r.id===id)||RARS[0];}
+function fmt(n){const v=Number(n);if(isNaN(v)||String(n).includes('e'))return String(n);if(v>=1e12)return(v/1e12).toFixed(1)+'T';if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(1)+'K';return Math.floor(v).toLocaleString();}
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='on'+(type?' t'+type:'');setTimeout(()=>t.className='',2800);}
+function mkb(p,cls,txt,fn){const b=document.createElement('button');b.className='rb '+cls;b.textContent=txt;b.onclick=fn;p.appendChild(b);}
+function spawnFI(txt,type=''){const el=document.createElement('div');el.className='fi'+(type?' fi-'+type:'');el.textContent=txt;el.style.left=(10+Math.random()*70)+'%';el.style.bottom=(55+Math.random()*85)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1400);}
+
+/* ════ LUCK ════ */
+function luckCost(l){return Math.floor(500*Math.pow(2.2,(l||S.luck)-1));}
+function getCh(cursed=false){
+  const pool=cursed?RARS.filter(r=>!r.adminOnly&&RARS.indexOf(r)>=3):RARS.filter(r=>!r.adminOnly);
+  const b=(S.luck-1)*.5;const res={};
+  pool.forEach((r,i)=>{let base=r.ch*(cursed?1.5:1);res[r.id]=Math.max(0.01,base+(i>0?b*.35:-(b*.35*pool.length/(pool.length-1||1))));});
+  return res;
+}
+function getIceCh(){const pool=ICE_RARS;const b=(S.iceLuck-1)*.5;const res={};pool.forEach((r,i)=>{const base=RARS[i]?.ch||1;res[r.id]=Math.max(0.01,base+(i>0?b*.35:-(b*.35*pool.length/(pool.length-1||1))));});return res;}
+function normCh(ch){const t=Object.values(ch).reduce((a,b)=>a+b,0);if(!t)return ch;const n={};for(const k in ch)n[k]=ch[k]/t*100;return n;}
+
+/* ════ WHEEL ════ */
+const wc=document.getElementById('wc'),wx=wc.getContext('2d');
+const wcice=document.getElementById('wcice'),wi=wcice.getContext('2d');
+let wAng=0,wAngI=0;
+
+function sizeWheel(){
+  const avH=window.innerHeight-56-36-50-24-240;
+  const avW=window.innerWidth*.56-22;
+  const w=Math.max(130,Math.min(avH,avW,370));
+  ['ww','wwice'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.width=w+'px';el.style.height=w+'px';}});
+  wc.width=w;wc.height=w;wcice.width=w;wcice.height=w;
+  drawW();drawWI();
+}
+
+function drawWheelOn(ctx,ang,pool,chFn,overlay){
+  const W=ctx.canvas.width,cx=W/2,cy=W/2,r=cx-3;
+  ctx.clearRect(0,0,W,W);
+  const ch=normCh(chFn());
+  const sl=[];
+  for(const rar of pool){const pct=(ch[rar.id]||0)/100;if(pct<=0)continue;const cnt=Math.max(1,Math.round(pct*22));for(let i=0;i<cnt;i++)sl.push({r:rar.id,a:(pct*Math.PI*2)/cnt,rar});}
+  const out=[];const byR={};for(const s of sl)(byR[s.r]=byR[s.r]||[]).push(s);
+  const pools=pool.filter(r=>byR[r.id]?.length).map(r=>byR[r.id]);
+  let go=true;while(go){go=false;for(const p of pools){if(p.length){out.push(p.shift());go=true;}}}
+  let sa=ang;
+  for(const s of out){ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,sa,sa+s.a);ctx.closePath();ctx.fillStyle=s.rar.w;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=.6;ctx.stroke();if(s.a>0.09){const ma=sa+s.a/2,tx=cx+Math.cos(ma)*r*.68,ty=cy+Math.sin(ma)*r*.68;ctx.save();ctx.translate(tx,ty);ctx.rotate(ma+Math.PI/2);ctx.font=`bold ${Math.floor(r*.07)}px Nunito`;ctx.fillStyle='rgba(255,255,255,.5)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.rar.l[0],0,0);ctx.restore();}sa+=s.a;}
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=overlay?'rgba(0,200,255,.3)':'rgba(255,255,255,.08)';ctx.lineWidth=2;ctx.stroke();
+  if(overlay){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='rgba(0,150,255,.07)';ctx.fill();}
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,'rgba(255,255,255,.06)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+}
+function drawW(a=wAng){const cursed=spinMode==='cursed'&&!S.purgeActive;const pool=cursed?RARS.filter(r=>!r.adminOnly&&RARS.indexOf(r)>=3):RARS.filter(r=>!r.adminOnly);drawWheelOn(wx,a,pool,()=>getCh(cursed),false);}
+function drawWI(a=wAngI){drawWheelOn(wi,a,ICE_RARS,getIceCh,true);}
+
+/* ════ SPIN MODE ════ */
+function setMode(m){
+  if(S.purgeActive&&m==='cursed'){toast('⛔ Purga ativa! Modo cursed bloqueado.','cu');return;}
+  spinMode=m;
+  const nb=document.getElementById('mbn'),cb=document.getElementById('mbc'),btn=document.getElementById('spbtn'),ci=document.getElementById('cursed-info'),wr=document.getElementById('wring'),nd=document.getElementById('ndl');
+  if(m==='cursed'){nb.classList.remove('on');cb.classList.add('on');btn.className='spbtn spbtn-c';btn.textContent='☠️ GIRAR MALDITO!';ci.style.display='block';wr.style.boxShadow='0 0 40px rgba(153,68,255,.55)';nd.style.borderTopColor='#cc00ff';}
+  else{cb.classList.remove('on');nb.classList.add('on');btn.className='spbtn spbtn-n';btn.textContent='🎰 GIRAR!';ci.style.display='none';wr.style.boxShadow='0 0 45px rgba(255,180,0,.2)';nd.style.borderTopColor='#ffcc00';}
+  renderCT();drawW();updNav();
+}
+
+/* ════ SPIN ════ */
+function pickRarId(cursed=false){const ch=normCh(getCh(cursed));const pool=cursed?RARS.filter(r=>!r.adminOnly&&RARS.indexOf(r)>=3):RARS.filter(r=>!r.adminOnly);let cum=0;const roll=Math.random()*100;for(const r of pool){cum+=(ch[r.id]||0);if(roll<=cum)return r.id;}return pool[pool.length-1]?.id||'common';}
+function pickIceRarId(){const ch=normCh(getIceCh());let cum=0;const roll=Math.random()*100;for(const r of ICE_RARS){cum+=(ch[r.id]||0);if(roll<=cum)return r.id;}return ICE_RARS[ICE_RARS.length-1].id;}
+function pickAN(rid){const p=BASE_AN.filter(a=>a.r===rid&&!a.adminPet);if(!p.length)return BASE_AN[0];return p[Math.floor(Math.random()*p.length)];}
+function pickIAN(rid){const p=ICE_AN.filter(a=>a.r===rid);if(!p.length)return ICE_AN[0];return p[Math.floor(Math.random()*p.length)];}
+function spinCost(){if(spinMode==='cursed'&&!S.purgeActive)return{type:'frags',amt:10000};return{type:'gold',amt:Math.floor(100*Math.pow(1.02,S.spins))};}
+function spin(){
+  if(spinning)return;
+  const cost=spinCost();
+  if(cost.type==='gold'&&S.gold<cost.amt){toast('💰 Insuficiente!');return;}
+  if(cost.type==='frags'&&S.frags<cost.amt){toast('Precisa de 10.000 💎 frags!');return;}
+  if(cost.type==='gold')S.gold-=cost.amt;else S.frags-=cost.amt;
+  S.spins++;updNav();spinning=true;document.getElementById('spbtn').disabled=true;
+  const cursed=spinMode==='cursed'&&!S.purgeActive;
+  const rid=pickRarId(cursed);const animal=pickAN(rid);
+  let bonusCF=0;
+  if(cursed&&Math.random()<.30){bonusCF=Math.floor(Math.random()*60)+10;S.cursedFrags+=bonusCF;updNav();renderCursedUI();}
+  const totalRot=Math.PI*2*(8+Math.random()*6),dur=cursed?3800+Math.random()*1000:2800+Math.random()*900,sa=wAng,st=performance.now();
+  function anim(now){const el=now-st,prog=Math.min(el/dur,1),ease=1-Math.pow(1-prog,4);wAng=sa+totalRot*ease;drawW(wAng);if(prog<1)requestAnimationFrame(anim);else{spinning=false;document.getElementById('spbtn').disabled=false;showResult(animal,bonusCF,false);}}
+  requestAnimationFrame(anim);
+}
+let spinningIce=false;
+function spinIce(){
+  if(spinningIce)return;
+  const cost=Math.floor(100*Math.pow(1.02,S.iceSpins));
+  if(S.gold<cost){toast('💰 Insuficiente!','ice');return;}
+  S.gold-=cost;S.iceSpins++;updNav();spinningIce=true;document.getElementById('ice-spbtn').disabled=true;
+  const rid=pickIceRarId();const animal=pickIAN(rid);
+  const totalRot=Math.PI*2*(8+Math.random()*6),dur=3000+Math.random()*800,sa=wAngI,st=performance.now();
+  function anim(now){const el=now-st,prog=Math.min(el/dur,1),ease=1-Math.pow(1-prog,4);wAngI=sa+totalRot*ease;drawWI(wAngI);if(prog<1)requestAnimationFrame(anim);else{spinningIce=false;document.getElementById('ice-spbtn').disabled=false;showResult(animal,0,true);}}
+  requestAnimationFrame(anim);
+  document.getElementById('ice-scost').innerHTML=`Custo: <span style="color:var(--ice)">💰${fmt(Math.floor(100*Math.pow(1.02,S.iceSpins)))}</span>`;
+}
+
+/* ════ RESULT ════ */
+function showResult(a,bonusCF,isIce){
+  const om=isIce?S.iceOwned:S.owned;const own=om[a.id];const isDup=own&&own.count>0;const fv=typeof a.p==='number'?a.p*5:0;
+  const rar=isIce?getIceRar(a.r):getAnyRar(a.r);const cursed=spinMode==='cursed'&&!S.purgeActive&&!isIce;
+  document.getElementById('rani').textContent=a.e+(own?.outfit||'');
+  document.getElementById('rnm').textContent=own?.customName||a.n;
+  document.getElementById('rlbl').textContent=isDup?'🔄 Duplicado!':'🎉 Novo Animal!';
+  document.getElementById('rrar').textContent=rar.l;document.getElementById('rrar').style.color=rar.c;
+  const iStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);
+  document.getElementById('rval').textContent=`💰 ${iStr}/s`;
+  document.getElementById('rcard').className='mo'+(cursed?' mo-cu':isIce?' mo-ice':'');
+  document.getElementById('rcard').style.boxShadow=`0 0 36px ${rar.c}66`;
+  const dup=document.getElementById('rdup');dup.style.display='none';dup.style.background='';dup.style.color='';
+  if(isDup&&!bonusCF){dup.style.display='block';dup.textContent=`💎 Já tem! +${fmt(fv)} frags`;}
+  if(bonusCF>0){dup.style.display='block';dup.style.background='rgba(153,68,255,.14)';dup.style.color='#cc88ff';dup.textContent=`☠️ +${bonusCF} frags amaldiçoados!`;}
+  const btns=document.getElementById('rbtns');btns.innerHTML='';
+  if(isDup){if(fv>0)mkb(btns,'kp',`💎 +${fmt(fv)}`,()=>{recvA(a,true,isIce);hideRes();});mkb(btns,'eq','📦 Guardar',()=>{recvA(a,false,isIce);hideRes();});}
+  else{mkb(btns,'kp','📦 Guardar',()=>{recvA(a,false,isIce);hideRes();});const eq=(isIce?S.iceEquipped:S.equipped).filter(Boolean).length;const sl=isIce?S.iceSlots:S.slots;if(eq<sl)mkb(btns,'eq','⚡ Equipar',()=>{recvA(a,false,isIce);equipPet(a.id,undefined,isIce);hideRes();});if(fv>0)mkb(btns,'sv','💎 Vender',()=>{recvA(a,true,isIce);hideRes();});}
+  document.getElementById('rov').classList.add('on');
+  const ri=RARS.findIndex(r=>r.id===a.r.replace('ice_',''));if(ri>=3||isIce)confetti(rar.c);
+}
+function hideRes(){document.getElementById('rov').classList.remove('on');}
+function recvA(a,toF,isIce){
+  const om=isIce?S.iceOwned:S.owned;if(!om[a.id])om[a.id]={count:0,customName:null,outfit:''};
+  if(toF){if(typeof a.p==='number'&&a.p>0){S.frags+=a.p*5;updNav();}}else om[a.id].count++;
+  if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();updCustSel();}
+}
+
+/* ════ SLOTS ════ */
+function slotCost(n){return Math.floor(1000*Math.pow(5,n-1));}
+function renderSlots(){
+  const g=document.getElementById('slgrid');g.innerHTML='';
+  for(let i=0;i<5;i++){const d=document.createElement('div');if(i>=S.slots){d.className='slt lk';d.innerHTML='🔒';}else{const pid=S.equipped[i];if(pid){const a=BASE_AN.find(x=>x.id===pid),ow=S.owned[pid],rar=getAnyRar(a?.r||'common');d.className='slt fl';d.style.borderColor=rar.c;d.innerHTML=`<span style="font-size:1.1rem">${a?.e||'?'}${ow?.outfit||''}</span><span class="sn">${ow?.customName||a?.n||'?'}</span><span class="si">💰${fmt(a?.i||0)}/s</span>`;d.onclick=()=>openPM(pid,false);}else{d.className='slt';d.innerHTML='➕<span class="sn" style="font-size:.48rem;color:var(--text2)">Vazio</span>';d.onclick=()=>pSlot(i,false);}}g.appendChild(d);}
+  document.getElementById('slbl').textContent=`${S.slots}/5`;
+  const sb=document.getElementById('slbtn');if(S.slots>=5){sb.textContent='✅ Máx!';sb.disabled=true;}else{sb.textContent=`🔓 Slot (💎${fmt(slotCost(S.slots))})`;sb.disabled=false;}
+}
+function renderIceSlots(){
+  const g=document.getElementById('ice-slgrid');g.innerHTML='';
+  for(let i=0;i<5;i++){const d=document.createElement('div');if(i>=S.iceSlots){d.className='slt lk';d.innerHTML='🔒';}else{const pid=S.iceEquipped[i];if(pid){const a=ICE_AN.find(x=>x.id===pid),ow=S.iceOwned[pid],rar=getIceRar(a?.r||'ice_common');d.className='slt fl';d.style.borderColor=rar.c;d.innerHTML=`<span style="font-size:1.1rem">${a?.e||'?'}${ow?.outfit||''}</span><span class="sn">${ow?.customName||a?.n||'?'}</span><span class="si" style="color:var(--ice)">❄️${fmt(a?.i||0)}/s</span>`;d.onclick=()=>openPM(pid,true);}else{d.className='slt';d.innerHTML='➕<span class="sn" style="font-size:.48rem;color:var(--text2)">Vazio</span>';d.onclick=()=>pSlot(i,true);}}g.appendChild(d);}
+  document.getElementById('ice-slbl').textContent=`${S.iceSlots}/5`;
+  const sb=document.getElementById('ice-slbtn');if(S.iceSlots>=5){sb.textContent='✅ Máx!';sb.disabled=true;}else{sb.textContent=`🔓 Slot (💎${fmt(slotCost(S.iceSlots))})`;sb.disabled=false;}
+}
+function unlockSlot(){const c=slotCost(S.slots);if(S.frags<c){toast('💎 Insuficiente!');return;}S.frags-=c;if(S.slots<5)S.slots++;renderSlots();updNav();toast('🎉 Slot!');}
+function unlockSlotIce(){const c=slotCost(S.iceSlots);if(S.frags<c){toast('💎 Insuficiente!','ice');return;}S.frags-=c;if(S.iceSlots<5)S.iceSlots++;renderIceSlots();updNav();toast('🎉 Slot gelo!','ice');}
+function pSlot(i,isIce){const om=isIce?S.iceOwned:S.owned,eq=isIce?S.iceEquipped:S.equipped;const av=Object.keys(om).filter(id=>om[id].count>0&&!eq.includes(id));if(!av.length){toast('Sem pets!');return;}if(isIce)S.iceEquipped[i]=av[0];else S.equipped[i]=av[0];if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}}
+function equipPet(id,idx,isIce){const eq=isIce?S.iceEquipped:S.equipped;const sl=isIce?S.iceSlots:S.slots;let i=idx!==undefined?idx:eq.findIndex(p=>!p);if(i===-1||i>=sl){toast('Slots cheios!');return;}if(isIce)S.iceEquipped[i]=id;else S.equipped[i]=id;if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}}
+function unequipPet(id,isIce){const eq=isIce?S.iceEquipped:S.equipped;const i=eq.indexOf(id);if(i>-1)eq.splice(i,1);if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}}
+
+/* ════ PET MODAL ════ */
+function openPM(id,isIce){
+  const ap=isIce?ICE_AN:BASE_AN,om=isIce?S.iceOwned:S.owned;const a=ap.find(x=>x.id===id);if(!a)return;
+  const ow=om[id],isEq=isIce?S.iceEquipped.includes(id):S.equipped.includes(id);
+  const rar=isIce?getIceRar(a.r):getAnyRar(a.r);
+  document.getElementById('pem').textContent=a.e+(ow?.outfit||'');
+  document.getElementById('pnm2').textContent=ow?.customName||a.n;
+  document.getElementById('prar2').textContent=rar.l;document.getElementById('prar2').style.color=rar.c;
+  const iStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);
+  document.getElementById('pst2').innerHTML=`<div class="ps"><div class="psl">Renda</div><div class="psv" style="color:#ffd700">💰${iStr}/s</div></div><div class="ps"><div class="psl">Valor</div><div class="psv">💎${fmt(a.p)}</div></div><div class="ps"><div class="psl">Qtd</div><div class="psv">${ow?.count||0}x</div></div><div class="ps"><div class="psl">Raridade</div><div class="psv" style="color:${rar.c}">${rar.l}</div></div>`;
+  const btns=document.getElementById('pbtns2');btns.innerHTML='';
+  if(isEq)mkb(btns,'rb cl','📤 Desequipar',()=>{unequipPet(id,isIce);hidePM();});
+  else{const eqC=isIce?S.iceEquipped.filter(Boolean).length:S.equipped.filter(Boolean).length;const sl=isIce?S.iceSlots:S.slots;if(eqC<sl)mkb(btns,'rb eq','⚡ Equipar',()=>{equipPet(id,undefined,isIce);hidePM();});}
+  if(typeof a.p==='number'&&a.p>0&&!isEq){mkb(btns,'rb sv','💎 Vender',()=>{if(!(ow?.count>0)){toast('Sem pet!');return;}om[id].count--;S.frags+=a.p;updNav();renderColl();hidePM();toast(`💎 +${fmt(a.p)}`);});}
+  mkb(btns,'rb cl','✕ Fechar',hidePM);
+  document.getElementById('pcard').className='mo'+(isIce?' mo-ice':'');
+  document.getElementById('pov').classList.add('on');
+}
+function hidePM(){document.getElementById('pov').classList.remove('on');}
+
+/* ════ INCOME ════ */
+function updInc(){
+  const hasAdm=S.equipped.filter(Boolean).some(id=>{const a=BASE_AN.find(x=>x.id===id);return a?.adminPet;});
+  if(hasAdm){document.getElementById('incd').textContent='💰 ∞ (ADMIN)';return Infinity;}
+  const inc=S.equipped.filter(Boolean).reduce((s,id)=>{const a=BASE_AN.find(x=>x.id===id);return s+(a?Number(a.i)||0:0);},0);
+  document.getElementById('incd').textContent=`💰 ${fmt(inc)}/s`;return inc;
+}
+function updIceInc(){
+  const inc=S.iceEquipped.filter(Boolean).reduce((s,id)=>{const a=ICE_AN.find(x=>x.id===id);return s+(a?Number(a.i)||0:0);},0);
+  document.getElementById('ice-incd').textContent=`❄️ ${fmt(inc)}/s`;return inc;
+}
+setInterval(()=>{
+  const inc=updInc();
+  if(inc===Infinity){S.gold+=1e12;S.passive+=1e12;updNav();}
+  else if(inc>0){S.gold+=inc;S.passive+=inc;updNav();document.getElementById('totle').textContent=fmt(S.passive);if(inc<1e9)spawnFI(`+${fmt(inc)}💰`);}
+  const ici=updIceInc();
+  if(ici>0&&S.onIce){S.gold+=ici;S.icePassive+=ici;updNav();document.getElementById('ice-totle').textContent=fmt(S.icePassive);if(ici<1e9)spawnFI(`+${fmt(ici)}❄️`,'ice');}
+  document.getElementById('ice-spinctr').textContent=S.iceSpins;
+},1000);
+
+/* ════ LUCK ════ */
+function upLuck(){if(S.luck>=20){toast('Máximo!');return;}const c=luckCost(S.luck);if(S.gold<c){toast('💰 Insuf!');return;}S.gold-=c;S.luck++;updNav();updLuck();renderCT();toast(`⭐ Sorte Lv.${S.luck}!`);}
+function upLuckIce(){if(S.iceLuck>=20){toast('Máximo!','ice');return;}const c=luckCost(S.iceLuck);if(S.gold<c){toast('💰 Insuf!','ice');return;}S.gold-=c;S.iceLuck++;updNav();updLuckIce();renderICT();toast(`⭐ Sorte Gelo Lv.${S.iceLuck}!`,'ice');}
+function updLuck(){document.getElementById('lvb').textContent=`Lv.${S.luck}`;document.getElementById('lvn').textContent=S.luck;document.getElementById('lb').style.width=((S.luck-1)/19*100)+'%';if(S.luck<20){const c=luckCost(S.luck);document.getElementById('lvc').textContent=`💰${fmt(c)}`;document.getElementById('lbtn').textContent=`✨ Melhorar (💰${fmt(c)})`;document.getElementById('lbtn').disabled=false;}else{document.getElementById('lvc').textContent='MAX!';document.getElementById('lbtn').textContent='✅ MAX!';document.getElementById('lbtn').disabled=true;}}
+function updLuckIce(){document.getElementById('ice-lvb').textContent=`Lv.${S.iceLuck}`;document.getElementById('ice-lvn').textContent=S.iceLuck;document.getElementById('icelb').style.width=((S.iceLuck-1)/19*100)+'%';if(S.iceLuck<20){const c=luckCost(S.iceLuck);document.getElementById('ice-lvc').textContent=`💰${fmt(c)}`;document.getElementById('ice-lbtn').textContent=`✨ Melhorar (💰${fmt(c)})`;document.getElementById('ice-lbtn').disabled=false;}else{document.getElementById('ice-lvc').textContent='MAX!';document.getElementById('ice-lbtn').textContent='✅ MAX!';document.getElementById('ice-lbtn').disabled=true;}}
+function renderCT(){const el=document.getElementById('ct');el.innerHTML='';const cursed=spinMode==='cursed'&&!S.purgeActive;const ch=normCh(getCh(cursed));const pool=cursed?RARS.filter(r=>!r.adminOnly&&RARS.indexOf(r)>=3):RARS.filter(r=>!r.adminOnly);document.getElementById('ctit').textContent=cursed?'☠️ Chances (Maldito)':'⚡ Chances';document.getElementById('ctit').style.color=cursed?'#cc88ff':'var(--text2)';for(const r of pool){const pct=ch[r.id]||0;if(pct<=0)continue;const row=document.createElement('div');row.className='crow';row.innerHTML=`<span style="color:${r.c};font-weight:800;width:58px;font-size:.66rem">${r.l}</span><div class="cbw"><div class="cb" style="background:${r.c};width:${Math.min(100,pct*2)}%"></div></div><span style="color:var(--text2);width:36px;text-align:right;font-size:.66rem">${pct.toFixed(2)}%</span>`;el.appendChild(row);}}
+function renderICT(){const el=document.getElementById('ict');el.innerHTML='';const ch=normCh(getIceCh());for(const r of ICE_RARS){const pct=ch[r.id]||0;if(pct<=0)continue;const row=document.createElement('div');row.className='crow';row.innerHTML=`<span style="color:${r.c};font-weight:800;width:60px;font-size:.66rem">${r.l}</span><div class="cbw"><div class="cb" style="background:${r.c};width:${Math.min(100,pct*2)}%"></div></div><span style="color:var(--text2);width:36px;text-align:right;font-size:.66rem">${pct.toFixed(2)}%</span>`;el.appendChild(row);}}
+
+/* ════ COLLECTION ════ */
+let cf='all';
+function renderColl(){
+  const g=document.getElementById('agrid');g.innerHTML='';
+  const pool=S.onIce?ICE_AN:BASE_AN.filter(a=>!a.adminPet);const om=S.onIce?S.iceOwned:S.owned;
+  const own=pool.filter(a=>(om[a.id]?.count||0)>0).length;document.getElementById('cprog').textContent=`${own}/${pool.length}`;
+  const list=cf==='all'?pool:pool.filter(a=>a.r===cf||a.r==='ice_'+cf);
+  for(const a of list){const cnt=om[a.id]?.count||0,ow=om[a.id],rar=S.onIce?getIceRar(a.r):getAnyRar(a.r);const card=document.createElement('div');card.className=`ac ${cnt>0?'':'no'}`;card.style.borderColor=cnt>0?rar.c+'44':'rgba(255,255,255,.06)';if(cnt>0)card.onclick=()=>openPM(a.id,S.onIce);const iStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);card.innerHTML=`${cnt>1?`<div class="cnt">${cnt}x</div>`:''}<span class="ae">${a.e}${ow?.outfit||''}</span><div class="an">${ow?.customName||a.n}</div><div class="ar" style="color:${rar.c}">${rar.l}</div><div class="ai">💰${iStr}/s</div>`;g.appendChild(card);}
+}
+function buildFils(){const f=document.getElementById('fils');f.innerHTML='';const pool=S.onIce?ICE_RARS:RARS.filter(r=>!r.adminOnly);const mk=(l,k,c)=>{const b=document.createElement('button');b.className='fb';if(cf===k){b.style.borderColor=c;b.style.color=c;b.style.background=c+'18';}b.textContent=l;b.onclick=()=>{cf=k;buildFils();renderColl();};f.appendChild(b);};mk('Todos','all','#aaa');pool.forEach(r=>mk(r.l,r.id,r.c));}
+
+/* ════ SHOP ════ */
+function genShop(){
+  const doCursed=!S.purgeActive&&Math.random()<.20;
+  S.cursedShopActive=doCursed;if(doCursed)S.cursedShopSec=300;
+  const pool=BASE_AN.filter(a=>!a.adminPet&&!a.isIce);const used=new Set(),res=[];let tries=0;
+  while(res.length<5&&tries<200){tries++;const rid=pickRarId(false);const p=pool.filter(a=>a.r===rid&&!used.has(a.id));if(p.length){const x=p[Math.floor(Math.random()*p.length)];used.add(x.id);res.push(x);}}
+  S.shop=res;
+}
+function renderShop(){
+  const g=document.getElementById('sgrd');const title=document.getElementById('shop-title-el');
+  const cs=document.getElementById('shop-cursed-section');
+  if(S.cursedShopActive&&!S.purgeActive){title.innerHTML='🏪 Loja &nbsp;<span style="color:var(--cu);font-size:.7rem">+ ☠️ Maldita</span>';cs.innerHTML=`<div style="background:rgba(60,0,140,.4);border:2px solid rgba(153,68,255,.5);border-radius:13px;padding:12px;margin-bottom:11px;text-align:center"><div style="font-family:'Fredoka One';font-size:.95rem;color:var(--cu);margin-bottom:4px">☠️ Loja Amaldiçoada</div><div style="font-size:.7rem;color:#cc88ff;margin-bottom:7px">Troque frags normais por ☠️! Disponível por <b id="cs-timer">${Math.floor(S.cursedShopSec/60)}:${String(S.cursedShopSec%60).padStart(2,'0')}</b></div><div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap"><button class="xbtn xcu" style="max-width:155px;font-size:.7rem" onclick="exchange100k()">100k 💎 → 100 ☠️</button><button class="xbtn xcu" style="max-width:155px;font-size:.7rem" onclick="exchange1m()">1M 💎 → 1000 ☠️</button></div></div>`;}
+  else{title.textContent='🏪 Loja';cs.innerHTML='';}
+  g.innerHTML='';
+  for(const a of S.shop){const rar=getAnyRar(a.r);const d=document.createElement('div');d.className='scd';d.style.boxShadow=`0 0 15px ${rar.c}33`;d.style.borderColor=rar.c+'44';d.innerHTML=`<span class="se">${a.e}</span><div class="snm">${a.n}</div><div class="srar" style="color:${rar.c}">${rar.l}</div><span class="spr">💰${fmt(a.p)}</span><div style="font-size:.62rem;color:var(--text2);margin-bottom:5px">💰${fmt(a.i)}/s</div><button class="bb" onclick="buyPet('${a.id}')">🛒 Comprar</button>`;g.appendChild(d);}
+}
+function buyPet(id){const a=BASE_AN.find(x=>x.id===id);if(!a)return;if(S.gold<a.p){toast('💰 Insuf!');return;}S.gold-=a.p;recvA(a,false,false);toast(`🎉 ${a.n}!`);renderColl();renderShop();updNav();}
+function startShopTimer(){
+  S.shopSec=300;clearInterval(shopInt);
+  shopInt=setInterval(()=>{
+    S.shopSec--;
+    const m=Math.floor(S.shopSec/60),s=S.shopSec%60;
+    document.getElementById('stv').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    document.getElementById('tbar').style.width=(S.shopSec/300*100)+'%';
+    if(S.cursedShopActive&&!S.purgeActive){S.cursedShopSec--;const ct=document.getElementById('cs-timer');if(ct){const cm=Math.floor(S.cursedShopSec/60),cs=S.cursedShopSec%60;ct.textContent=`${cm}:${String(cs).padStart(2,'0')}`;}if(S.cursedShopSec<=0){S.cursedShopActive=false;renderShop();toast('☠️ Loja maldita encerrou!','cu');}}
+    if(S.shopSec<=0){genShop();renderShop();startShopTimer();if(S.cursedShopActive&&!S.purgeActive)toast('☠️ Loja Maldita apareceu!','cu');else toast('🔄 Loja atualizada!');}
+  },1000);
+}
+
+/* ════ CURSED EXCHANGES ════ */
+function exchange100k(){if(S.frags<100000){toast('Precisa 100.000 💎!');return;}S.frags-=100000;S.cursedFrags+=100;updNav();renderCursedUI();toast('☠️ +100!','cu');}
+function exchange1m(){if(S.frags<1000000){toast('Precisa 1.000.000 💎!');return;}S.frags-=1000000;S.cursedFrags+=1000;updNav();renderCursedUI();toast('☠️ +1000!','cu');}
+function buyCSpin(qty){const cost=qty===1?10:90;if(S.cursedFrags<cost){toast(`Precisa ${cost} ☠️!`,'cu');return;}S.cursedFrags-=cost;S.storedCS+=qty;updNav();renderCursedUI();toast(`☠️ +${qty} giro(s)!`,'cu');}
+function claimAdmin(who){if(S.cursedFrags<1000000){toast('Precisa 1M ☠️!','cu');return;}S.cursedFrags-=1000000;const a=BASE_AN.find(x=>x.id===who);if(!a)return;recvA(a,false,false);updNav();renderCursedUI();toast(`🔥 ${a.n} desbloqueado!!!`);confetti('#ff0055');confetti('#9944ff');}
+
+/* ════ ICE MAP ════ */
+function tryEnterIce(){document.getElementById('ice-ov').classList.add('on');}
+function confirmIce(){
+  if(S.cursedFrags<1000000){toast('Precisa 1M ☠️!','cu');document.getElementById('ice-ov').classList.remove('on');return;}
+  S.cursedFrags-=1000000;S.equipped=[];S.owned={};S.slots=1;S.onIce=true;
+  document.getElementById('ice-ov').classList.remove('on');
+  document.body.classList.add('ice-mode');
+  document.getElementById('logo-txt').textContent='❄️ Animal Roulette';
+  document.getElementById('map-badge').style.display='flex';
+  document.getElementById('ice-tab').style.display='flex';
+  updNav();renderSlots();renderIceSlots();renderColl();updLuck();updLuckIce();renderCT();drawW();drawWI();
+  toast('❄️ Bem-vindo ao Mapa de Gelo!','ice');confetti('#88eeff');
+  goTab('icemap',document.getElementById('ice-tab'));
+}
+function leaveIce(){
+  if(!confirm('Voltar ao Normal? Perderá pets de gelo.'))return;
+  S.iceEquipped=[];S.iceOwned={};S.iceSlots=1;S.iceSpins=0;S.icePassive=0;S.iceLuck=1;S.onIce=false;
+  document.body.classList.remove('ice-mode');document.getElementById('logo-txt').textContent='🎰 Animal Roulette';document.getElementById('map-badge').style.display='none';document.getElementById('ice-tab').style.display='none';
+  updNav();renderSlots();renderIceSlots();renderColl();updLuck();updLuckIce();
+  toast('🎰 Voltou ao normal!');goTab('spin',document.querySelector('[data-tab=spin]'));
+}
+
+/* ════ CURSED UI ════ */
+function renderCursedUI(){
+  document.getElementById('cf-norm-disp').textContent=fmt(S.frags);
+  document.getElementById('cf-curs-disp').textContent=fmt(S.cursedFrags);
+  document.getElementById('stored-cs').textContent=S.storedCS;
+  const pct=Math.min(100,S.cursedFrags/1000000*100);
+  document.getElementById('puzz-bar').style.width=pct+'%';
+  document.getElementById('puzz-txt').textContent=`${fmt(S.cursedFrags)} / 1.000.000 ☠️`;
+  document.getElementById('puzz-pct').textContent=pct.toFixed(2)+'%';
+  ['cappu','draxen'].forEach(w=>{
+    const btn=document.getElementById(w+'-btn');const owned=(S.owned[w]?.count||0)>0;
+    if(owned){btn.textContent='✅ Obtido!';btn.disabled=true;btn.style.background='linear-gradient(135deg,#44ff88,#00cc55)';btn.style.color='#001a0d';}
+    else if(S.cursedFrags>=1000000){btn.textContent='🔓 RESGATAR!';btn.disabled=false;btn.style.background='';}
+    else{btn.textContent=`🔒 ${fmt(S.cursedFrags)}/1M ☠️`;btn.disabled=true;btn.style.background='';}
+  });
+  const ib=document.getElementById('ice-access-btn');
+  if(S.onIce){ib.textContent='✅ Já no Gelo';ib.disabled=true;}
+  else if(S.cursedFrags>=1000000){ib.textContent='❄️ Acessar (1M ☠️)';ib.disabled=false;}
+  else{ib.textContent=`❄️ Faltam ${fmt(1000000-S.cursedFrags)} ☠️`;ib.disabled=true;}
+}
+
+/* ════════════════════════════════════
+   BATTLE SYSTEM
+════════════════════════════════════ */
+const BOTS = [
+  {id:'bot1',name:'Fredinho',emoji:'🐭',diff:'Fácil',diffColor:'#44ff88',pet:{n:'Ratinho',e:'🐭',r:'common',hp:80,atk:8,def:3,spd:4,skill:'Fuga Rápida'},reward:{gold:500,frags:50}},
+  {id:'bot2',name:'Capitão Garra',emoji:'🦅',diff:'Médio',diffColor:'#ffcc00',pet:{n:'Águia Real',e:'🦅',r:'epic',hp:150,atk:22,def:10,spd:8,skill:'Mergulho Fatal'},reward:{gold:2000,frags:200}},
+  {id:'bot3',name:'Rei Chamas',emoji:'🐉',diff:'Difícil',diffColor:'#ff8800',pet:{n:'Dragão Negro',e:'🐉',r:'mythic',hp:250,atk:40,def:18,spd:12,skill:'Sopro de Fogo'},reward:{gold:8000,frags:800}},
+  {id:'bot4',name:'Sombra da Lua',emoji:'🌕',diff:'Épico',diffColor:'#bb44ff',pet:{n:'Lobo Lunar',e:'🌕',r:'legendary',hp:400,atk:65,def:28,spd:20,skill:'Uivo da Lua'},reward:{gold:25000,frags:2500}},
+  {id:'bot5',name:'OMEGA-9000',emoji:'🤖',diff:'LENDÁRIO',diffColor:'#ff0055',pet:{n:'Máquina Omega',e:'🤖',r:'ultra',hp:700,atk:100,def:50,spd:30,skill:'Laser Devastador'},reward:{gold:100000,frags:10000}},
+];
+
+// Pet power = income / 100 + rarity bonus
+function petPower(a){
+  const rarBonus={common:1,rare:2,epic:4,mythic:8,legendary:16,secret:32,ultra:64,colossal:128,godly:256,admin:999};
+  const rMult=rarBonus[a.r]||1;
+  const inc=typeof a.i==='string'?1e10:Number(a.i)||0;
+  return{
+    hp:Math.min(9999,Math.max(50,Math.floor(inc/100*rMult+rMult*20))),
+    atk:Math.min(999,Math.max(5,Math.floor(inc/500*rMult+rMult*5))),
+    def:Math.min(200,Math.max(2,Math.floor(rMult*3))),
+    spd:Math.min(50,Math.max(3,rMult*2)),
+    skill:a.n+' Power!',
+  };
+}
+
+let battle={state:'lobby',selectedBot:null,selectedPetId:null,playerHP:0,playerMaxHP:0,botHP:0,botMaxHP:0,playerTurn:true,done:false,turnsLeft:0};
+
+function renderBattleLobby(){
+  const bg=document.getElementById('bot-grid');bg.innerHTML='';
+  BOTS.forEach(bot=>{const d=document.createElement('div');d.className='bot-card'+(battle.selectedBot===bot.id?' selected':'');d.innerHTML=`<span class="bot-emoji">${bot.emoji}</span><div class="bot-name">${bot.name}</div><div class="bot-diff" style="color:${bot.diffColor}">${bot.diff}</div><div class="bot-reward">💰${fmt(bot.reward.gold)} · 💎${fmt(bot.reward.frags)}</div>`;d.onclick=()=>{battle.selectedBot=bot.id;renderBattleLobby();renderPetSelect();};bg.appendChild(d);});
+  renderPetSelect();
+}
+function renderPetSelect(){
+  const g=document.getElementById('pet-select-grid');g.innerHTML='';
+  const pool=S.onIce?S.iceOwned:S.owned;const anPool=S.onIce?ICE_AN:BASE_AN;
+  const owned=anPool.filter(a=>(pool[a.id]?.count||0)>0&&!a.adminPet);
+  if(!owned.length){g.innerHTML='<div style="font-size:.75rem;color:var(--text2);grid-column:1/-1;text-align:center;padding:10px">Não tem pets! Gire a roleta primeiro.</div>';return;}
+  owned.forEach(a=>{const pwr=petPower(a);const rar=getAnyRar(a.r);const d=document.createElement('div');d.className='ps-card'+(battle.selectedPetId===a.id?' sel':'');d.innerHTML=`<span class="ps-em">${a.e}</span><div class="ps-nm">${a.n}</div><div class="ps-pwr" style="color:${rar.c}">HP:${pwr.hp} ATK:${pwr.atk}</div>`;d.onclick=()=>{battle.selectedPetId=a.id;renderPetSelect();};g.appendChild(d);});
+}
+function startBattle(){
+  if(!battle.selectedBot){toast('Escolha um bot!');return;}
+  if(!battle.selectedPetId){toast('Escolha um pet!');return;}
+  const bot=BOTS.find(b=>b.id===battle.selectedBot);
+  const anPool=S.onIce?ICE_AN:BASE_AN;const pa=anPool.find(a=>a.id===battle.selectedPetId);if(!pa)return;
+  const pwr=petPower(pa);const pRar=getAnyRar(pa.r);
+  battle.playerHP=pwr.hp;battle.playerMaxHP=pwr.hp;
+  battle.botHP=bot.pet.hp;battle.botMaxHP=bot.pet.hp;
+  battle.playerTurn=pwr.spd>=bot.pet.spd;battle.done=false;battle.currentBot=bot;battle.playerAnimal=pa;battle.playerPwr=pwr;battle.state='fighting';
+  // Show battle screen
+  document.getElementById('battle-lobby').style.display='none';
+  document.getElementById('battle-screen').style.display='block';
+  document.getElementById('battle-result-screen').style.display='none';
+  // Fill UI
+  document.getElementById('p-emoji').textContent=pa.e;document.getElementById('p-name').textContent=pa.n;document.getElementById('p-rar').textContent=pRar.l;document.getElementById('p-rar').style.color=pRar.c;
+  document.getElementById('b-emoji').textContent=bot.pet.e;document.getElementById('b-name').textContent=bot.pet.n;document.getElementById('b-rar').textContent=bot.pet.r;document.getElementById('b-rar').style.color=RARS.find(r=>r.id===bot.pet.r)?.c||'#fff';
+  updBattleHP();clearLog();logEntry(`⚔️ Batalha iniciada! ${pa.n} vs ${bot.pet.n}!`,'');
+  if(battle.playerTurn)logEntry('Você é mais rápido! Seu turno primeiro.','');else{logEntry('O bot é mais rápido! Ele ataca primeiro.','bot');setTimeout(()=>botTurn(),800);}
+  setMoveBtns(battle.playerTurn);
+  // Change music to battle theme
+  if(isPlaying){currentTrackIdx=2;playTrack(2);}
+}
+function updBattleHP(){
+  const pp=Math.max(0,battle.playerHP/battle.playerMaxHP*100);const bp=Math.max(0,battle.botHP/battle.botMaxHP*100);
+  const pb=document.getElementById('p-hp-bar');pb.style.width=pp+'%';pb.className='hp-bar'+(pp<30?' low':pp<60?' mid':'');
+  const bb2=document.getElementById('b-hp-bar');bb2.style.width=bp+'%';bb2.className='hp-bar'+(bp<30?' low':bp<60?' mid':'');
+  document.getElementById('p-hp-txt').textContent=`HP: ${Math.max(0,battle.playerHP)}/${battle.playerMaxHP}`;
+  document.getElementById('b-hp-txt').textContent=`HP: ${Math.max(0,battle.botHP)}/${battle.botMaxHP}`;
+}
+function clearLog(){document.getElementById('battle-log').innerHTML='';}
+function logEntry(msg,type=''){const el=document.getElementById('battle-log');const d=document.createElement('div');d.className='log-entry';if(type==='player')d.innerHTML=`<span class="log-player">Você</span>: ${msg}`;else if(type==='bot')d.innerHTML=`<span class="log-bot">Bot</span>: ${msg}`;else if(type==='crit')d.innerHTML=`<span class="log-crit">✨ CRÍTICO!</span> ${msg}`;else if(type==='miss')d.innerHTML=`<span class="log-miss">💨 Errou!</span> ${msg}`;else d.innerHTML=msg;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+function setMoveBtns(on){document.querySelectorAll('.move-btn').forEach(b=>b.disabled=!on);document.getElementById('battle-turn-txt').textContent=on?'Seu turno!':'Bot pensando...';}
+function flashAtk(isPlayer){
+  const f=document.getElementById('atk-flash');f.style.background=isPlayer?'rgba(255,200,0,.07)':'rgba(255,0,0,.1)';f.style.opacity='1';setTimeout(()=>f.style.opacity='0',200);
+  const em=document.getElementById(isPlayer?'b-emoji':'p-emoji');em.classList.add('shake');setTimeout(()=>em.classList.remove('shake'),400);
+}
+
+function doMove(type){
+  if(!battle.playerTurn||battle.done)return;
+  setMoveBtns(false);
+  const pwr=battle.playerPwr,bot=battle.currentBot;
+  let dmg=0,log='',logType='player';
+  if(type==='atk'){
+    const crit=Math.random()<.15;dmg=Math.floor(pwr.atk*(crit?2:1)*(0.85+Math.random()*.3));dmg=Math.max(1,dmg-bot.pet.def);
+    if(crit){log=`Ataque crítico! -${dmg} HP no bot!`;logType='crit';}else{log=`Atacou por ${dmg} de dano.`;logType='player';}
+  }else if(type==='heavy'){
+    if(Math.random()<.35){log=`Golpe Pesado errou!`;logType='miss';dmg=0;}else{dmg=Math.floor(pwr.atk*2*(0.9+Math.random()*.2));dmg=Math.max(1,dmg-bot.pet.def);log=`💥 Golpe Pesado! -${dmg} HP!`;logType='player';}
+  }else if(type==='skill'){
+    const rarBonus={common:1,rare:1.5,epic:2.5,mythic:4,legendary:6,secret:10,ultra:18,colossal:35,godly:70,admin:999};
+    const mult=rarBonus[battle.playerAnimal.r.replace('ice_','')]||1;
+    dmg=Math.floor(pwr.atk*mult*(0.8+Math.random()*.4));dmg=Math.max(1,dmg-bot.pet.def);
+    log=`✨ ${pwr.skill}! -${dmg} HP no bot!`;logType='crit';
+  }else if(type==='heal'){
+    const heal=Math.floor(battle.playerMaxHP*(.15+Math.random()*.1));battle.playerHP=Math.min(battle.playerMaxHP,battle.playerHP+heal);log=`💊 Curou ${heal} HP!`;logType='player';
+  }
+  if(dmg>0){battle.botHP-=dmg;flashAtk(true);}
+  logEntry(log,logType);updBattleHP();
+  if(battle.botHP<=0){endBattle(true);return;}
+  battle.playerTurn=false;setTimeout(()=>botTurn(),900);
+}
+
+function botTurn(){
+  if(battle.done)return;
+  const bot=battle.currentBot;let dmg=0,log='';
+  const r=Math.random();
+  if(r<.4){
+    const crit=Math.random()<.12;dmg=Math.floor(bot.pet.atk*(crit?1.8:1)*(0.85+Math.random()*.3));dmg=Math.max(1,dmg-battle.playerPwr.def);
+    if(crit){log=`Crítico! -${dmg} HP em você!`;logEntry(log,'crit');}else{log=`Atacou por ${dmg}.`;logEntry(log,'bot');}
+  }else if(r<.65){
+    if(Math.random()<.3){logEntry('Errou o ataque!','miss');}else{dmg=Math.floor(bot.pet.atk*1.9*(0.9+Math.random()*.2));dmg=Math.max(1,dmg-battle.playerPwr.def);logEntry(`💥 Golpe forte! -${dmg} HP!`,'bot');}
+  }else if(r<.85){
+    const sd=Math.floor(bot.pet.atk*2.5*(0.8+Math.random()*.4));dmg=Math.max(1,sd-battle.playerPwr.def);logEntry(`✨ ${bot.pet.skill}! -${dmg} HP!`,'crit');
+  }else{
+    const heal=Math.floor(bot.pet.hp*(.12+Math.random()*.08));battle.botHP=Math.min(battle.botMaxHP,battle.botHP+heal);logEntry(`💊 Bot curou ${heal} HP!`,'bot');
+  }
+  if(dmg>0){battle.playerHP-=dmg;flashAtk(false);}
+  updBattleHP();
+  if(battle.playerHP<=0){endBattle(false);return;}
+  battle.playerTurn=true;setMoveBtns(true);
+  document.getElementById('p-emoji').classList.add('bounce');setTimeout(()=>document.getElementById('p-emoji').classList.remove('bounce'),500);
+}
+
+function endBattle(playerWon){
+  battle.done=true;setMoveBtns(false);
+  if(playerWon){
+    S.battleWins++;const bot=battle.currentBot;S.gold+=bot.reward.gold;S.frags+=bot.reward.frags;updNav();
+    document.getElementById('battle-result-title').innerHTML='🏆 <span style="color:#44ff88">VITÓRIA!</span>';
+    document.getElementById('battle-result-reward').innerHTML=`Recompensa: 💰+${fmt(bot.reward.gold)} ouro · 💎+${fmt(bot.reward.frags)} frags`;
+    logEntry(`🏆 VOCÊ VENCEU! +${fmt(bot.reward.gold)}💰 +${fmt(bot.reward.frags)}💎`,'crit');
+    confetti('#44ff88');confetti('#ffcc00');
+    if(isPlaying){currentTrackIdx=0;playTrack(0);}
+  }else{
+    S.battleLosses++;
+    document.getElementById('battle-result-title').innerHTML='💀 <span style="color:#ff4444">DERROTA!</span>';
+    document.getElementById('battle-result-reward').innerHTML='Tente equipar pets mais fortes!';
+    logEntry('💀 Você foi derrotado...','');
+    if(isPlaying){currentTrackIdx=1;playTrack(1);}
+  }
+  setTimeout(()=>{document.getElementById('battle-screen').style.display='none';document.getElementById('battle-result-screen').style.display='block';},1200);
+}
+function resetBattle(){battle={state:'lobby',selectedBot:null,selectedPetId:null,done:false};document.getElementById('battle-lobby').style.display='block';document.getElementById('battle-screen').style.display='none';document.getElementById('battle-result-screen').style.display='none';renderBattleLobby();}
+
+/* ════ CUSTOMIZE ════ */
+function updCustSel(){const sel=document.getElementById('csel'),prev=sel.value;sel.innerHTML='<option value="">-- Pet --</option>';BASE_AN.filter(a=>(S.owned[a.id]?.count||0)>0).forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=`${a.e} ${S.owned[a.id]?.customName||a.n}`;sel.appendChild(o);});if(prev)sel.value=prev;updCust();}
+function updCust(){const id=document.getElementById('csel').value,pv=document.getElementById('cpv');if(!id){pv.innerHTML='<span style="font-size:1.7rem">🐾</span><span style="color:var(--text2);font-size:.68rem">Nenhum</span>';return;}const a=BASE_AN.find(x=>x.id===id),ow=S.owned[id];document.getElementById('cnm').value=ow?.customName||'';pv.innerHTML=`<span style="font-size:1.9rem">${a.e}${ow?.outfit||''}</span><span style="font-weight:800;font-size:.76rem">${ow?.customName||a.n}</span>`;const or=document.getElementById('orow');or.innerHTML='';const nb=document.createElement('button');nb.className=`ob${ow?.outfit===''?' sl':''}`;nb.textContent='❌';nb.onclick=()=>{if(ow)ow.outfit='';updCust();renderSlots();renderColl();};or.appendChild(nb);for(const o of OUTFITS){const b=document.createElement('button');b.className=`ob${ow?.outfit===o?' sl':''}`;b.textContent=o;b.onclick=()=>{if(ow)ow.outfit=o;updCust();renderSlots();renderColl();};or.appendChild(b);}}
+function apCust(){const id=document.getElementById('csel').value;if(!id){toast('Selecione!');return;}const ow=S.owned[id];if(!ow)return;const nm=document.getElementById('cnm').value.trim();if(nm)ow.customName=nm;updCust();renderSlots();renderColl();updCustSel();toast('✨ Salvo!');}
+
+/* ════ STATS ════ */
+function renderStats(){
+  const el=document.getElementById('stbody');const ownA=BASE_AN.filter(a=>(S.owned[a.id]?.count||0)>0);const inc=updInc();
+  const rows=[['🎰 Giros (Normal)',S.spins],['🎰 Giros (Gelo)',S.iceSpins],['💰 Ouro',fmt(S.gold)],['💎 Frags',fmt(S.frags)],['☠️ Frags Malditos',fmt(S.cursedFrags)],['⭐ Sorte',`Lv.${S.luck}`],['⭐ Sorte (Gelo)',`Lv.${S.iceLuck}`],['📚 Pets',`${ownA.length}/${BASE_AN.filter(a=>!a.adminPet).length}`],['💸 Renda/s',inc===Infinity?'∞':fmt(inc)+''],['⚔️ Batalhas Vencidas',S.battleWins],['💀 Batalhas Perdidas',S.battleLosses],['🗺️ Mapa',S.onIce?'❄️ Gelo':'🎰 Normal'],['🆙 Versão','Update 1 ☠️❄️⚔️']];
+  const rc={};RARS.forEach(r=>rc[r.id]=0);ownA.forEach(a=>rc[a.r]=(rc[a.r]||0)+1);
+  el.innerHTML=rows.map(([l,v])=>`<div class="srow"><span class="srl">${l}</span><span class="srv">${v}</span></div>`).join('')+'<div style="margin-top:12px;font-family:\'Fredoka One\';font-size:.82rem;color:var(--text2);margin-bottom:8px">Pets por Raridade</div>'+RARS.filter(r=>!r.adminOnly).map(r=>`<div class="srow"><span class="srl" style="color:${r.c}">${r.l}</span><span class="srv">${rc[r.id]||0}/${BASE_AN.filter(a=>a.r===r.id).length}</span></div>`).join('');
+}
+
+/* ════ NAV ════ */
+function updNav(){
+  document.getElementById('ng').textContent=fmt(S.gold);
+  document.getElementById('nf').textContent=fmt(S.frags);
+  document.getElementById('ncf').textContent=fmt(S.cursedFrags);
+  if(!S.purgeActive)document.getElementById('cf-badge').style.display='flex';
+  const cost=spinMode==='cursed'&&!S.purgeActive?{type:'frags',amt:10000}:{type:'gold',amt:Math.floor(100*Math.pow(1.02,S.spins))};
+  document.getElementById('scost').innerHTML=cost.type==='frags'?`Custo: <span style="color:var(--cu)">☠️ 10.000 💎</span>`:`Custo: <span style="color:#ffd700">💰${fmt(cost.amt)}</span>`;
+  document.getElementById('spinctr').textContent=S.spins;
+}
+
+/* ════ TABS ════ */
+function goTab(name,el){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('s-'+name).classList.add('on');
+  if(el)el.classList.add('on');
+  if(name==='coll'){buildFils();renderColl();}
+  if(name==='shop')updCustSel();
+  if(name==='stats')renderStats();
+  if(name==='cursed')renderCursedUI();
+  if(name==='icemap'){renderIceSlots();renderICT();updLuckIce();}
+  if(name==='battle'){renderBattleLobby();}
+  // Music changes
+  if(name==='battle'&&isPlaying){currentTrackIdx=2;playTrack(2);}
+  if(name==='icemap'&&isPlaying){currentTrackIdx=3;playTrack(3);}
+  if(name==='cursed'&&isPlaying){currentTrackIdx=4;playTrack(4);}
+  if((name==='spin'||name==='coll'||name==='shop')&&isPlaying){currentTrackIdx=0;playTrack(0);}
+}
+
+/* ════ CONFETTI ════ */
+const cc=document.getElementById('cc'),ccx=cc.getContext('2d');
+cc.width=window.innerWidth;cc.height=window.innerHeight;let cp=[];
+function confetti(col){for(let i=0;i<140;i++)cp.push({x:Math.random()*cc.width,y:-10,vx:(Math.random()-.5)*7,vy:Math.random()*5+2,c:[col,'#ffcc00','#fff','#ff44cc'][Math.floor(Math.random()*4)],sz:Math.random()*9+4,rot:Math.random()*360,rv:(Math.random()-.5)*12,life:1});animCC();}
+function animCC(){ccx.clearRect(0,0,cc.width,cc.height);cp=cp.filter(p=>p.life>0);for(const p of cp){p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.life-=.012;ccx.save();ccx.globalAlpha=p.life;ccx.translate(p.x,p.y);ccx.rotate(p.rot*Math.PI/180);ccx.fillStyle=p.c;ccx.fillRect(-p.sz/2,-p.sz/4,p.sz,p.sz/2);ccx.restore();}if(cp.length)requestAnimationFrame(animCC);}
+
+/* ════ INIT ════ */
+window.addEventListener('resize',()=>{sizeWheel();cc.width=window.innerWidth;cc.height=window.innerHeight;});
+document.getElementById('rov').addEventListener('click',e=>{if(e.target===document.getElementById('rov'))hideRes();});
+document.getElementById('pov').addEventListener('click',e=>{if(e.target===document.getElementById('pov'))hidePM();});
+document.getElementById('ice-ov').addEventListener('click',e=>{if(e.target===document.getElementById('ice-ov'))document.getElementById('ice-ov').classList.remove('on');});
+
+sizeWheel();drawW();drawWI();renderCT();renderICT();updLuck();updLuckIce();renderSlots();renderIceSlots();updNav();updInc();updIceInc();genShop();renderShop();startShopTimer();updCustSel();renderCursedUI();renderBattleLobby();
+document.getElementById('s-spin').classList.add('on');
+setInterval(renderCursedUI,5000);
+
+// Auto play music on first interaction
+document.addEventListener('click',()=>{if(!isPlaying&&audioCtx===null){playTrack(0);}},{once:true});
+</script>
+</body>
+</html>
