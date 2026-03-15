@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 Animal Roulette — Update 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07071a;--card:#111130;--card2:#1a1a45;--border:#252565;
+  --text:#e8e8ff;--text2:#7777aa;--gold:#ffd700;--frag:#66ffcc;
+  --nav:56px;--tab:50px;
+  --cursed:#aa44ff;--cursed2:#cc00ff;
+  --ice:#88eeff;--icebg:#071a2a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(80,40,200,.13),transparent),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(200,40,120,.1),transparent);}
+body.ice-mode{--bg:#071a2a;--card:#0a1e35;--card2:#0f2a45;--border:#1a4060;--text:#d0f0ff;--text2:#5599aa;}
+body.ice-mode::before{background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(0,150,255,.15),transparent),
+  radial-gradient(ellipse 60% 40% at 80% 80%,rgba(0,200,255,.1),transparent);}
+
+/* update ribbon */
+.update-ribbon{position:fixed;top:0;right:0;z-index:9999;pointer-events:none;}
+.update-ribbon span{display:block;background:linear-gradient(135deg,#ff0055,#9944ff);color:#fff;
+  font-family:'Fredoka One';font-size:.65rem;padding:3px 26px;transform:rotate(45deg) translate(18px,-8px);
+  box-shadow:0 2px 8px rgba(0,0,0,.5);letter-spacing:1px;}
+
+/* TOPBAR */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav);
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px;
+  background:rgba(7,7,26,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+body.ice-mode #topbar{background:rgba(7,26,42,.97);border-color:rgba(0,180,255,.2);}
+.logo{font-family:'Fredoka One';font-size:1.1rem;background:linear-gradient(120deg,#ff6644,#ffcc00,#ff44cc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
+body.ice-mode .logo{background:linear-gradient(120deg,#00ccff,#88eeff,#ffffff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topstats{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;}
+.badge{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:3px 9px;font-size:.72rem;font-weight:800;}
+.gv{color:#ffd700;}.fv{color:#66ffcc;}.cv{color:#cc00ff;}
+.map-badge{font-size:.7rem;font-weight:900;padding:3px 10px;border-radius:20px;
+  background:rgba(136,238,255,.12);border:1px solid rgba(136,238,255,.4);color:var(--ice);}
+
+/* TABS */
+#tabs{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--tab);
+  display:flex;background:rgba(7,7,26,.97);border-top:1px solid var(--border);}
+body.ice-mode #tabs{background:rgba(7,26,42,.97);border-color:rgba(0,180,255,.2);}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;font-size:.56rem;font-weight:800;color:var(--text2);cursor:pointer;
+  border:none;background:transparent;font-family:'Nunito';transition:color .2s;}
+.tb .i{font-size:1rem;}.tb.on{color:#ffd700;}.tb.on .i{filter:drop-shadow(0 0 5px #ffd700);}
+.tb.ctab.on{color:var(--cursed2);}.tb.ctab.on .i{filter:drop-shadow(0 0 8px var(--cursed2));}
+.tb.ictab.on{color:var(--ice);}.tb.ictab.on .i{filter:drop-shadow(0 0 8px var(--ice));}
+
+/* SCREENS */
+.sc{display:none;position:fixed;top:var(--nav);bottom:var(--tab);left:0;right:0;overflow-y:auto;z-index:1;}
+.sc::-webkit-scrollbar{width:4px;}.sc::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.sc.on{display:block;}
+#s-spin.on,#s-icemap.on{display:grid;grid-template-columns:1fr 285px;gap:11px;padding:11px;align-items:start;}
+#s-shop.on{display:grid;grid-template-columns:1fr 265px;gap:11px;padding:11px;}
+#s-cursed.on,#s-coll.on,#s-stats.on{display:block;padding:11px;}
+
+/* WHEEL */
+.sl{display:flex;flex-direction:column;align-items:center;gap:9px;}
+.ww{position:relative;flex-shrink:0;}
+.wring{width:100%;height:100%;border-radius:50%;border:4px solid rgba(255,255,255,.1);
+  box-shadow:0 0 50px rgba(255,180,0,.2);overflow:hidden;transition:box-shadow .4s;}
+#wc{width:100%;height:100%;border-radius:50%;}
+.ndl{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;
+  border-left:8px solid transparent;border-right:8px solid transparent;border-top:22px solid #ffcc00;
+  filter:drop-shadow(0 2px 5px #ffcc00aa);z-index:10;transition:border-top-color .4s;}
+.cdot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;
+  border-radius:50%;background:radial-gradient(circle,#fff 0%,#ffcc00 60%,#ff6600 100%);
+  box-shadow:0 0 12px #ffcc0099;z-index:10;pointer-events:none;}
+.spbtn{border:none;border-radius:50px;padding:11px 42px;font-family:'Fredoka One';
+  font-size:1.15rem;color:#fff;cursor:pointer;letter-spacing:1px;transition:all .15s;}
+.spbtn-normal{background:linear-gradient(135deg,#ff5533,#ffcc00,#ff44cc);box-shadow:0 4px 22px rgba(255,100,0,.4);}
+.spbtn-cursed{background:linear-gradient(135deg,#440088,#9944ff,#cc00ff);box-shadow:0 4px 22px rgba(153,68,255,.5);}
+.spbtn-ice{background:linear-gradient(135deg,#0088cc,#00ccff,#88eeff);box-shadow:0 4px 22px rgba(0,200,255,.4);color:#001a2a;}
+.spbtn:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.spbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none;}
+.scost{font-size:.72rem;color:var(--text2);}
+.cbox{width:100%;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:10px 13px;}
+.ctit{font-family:'Fredoka One';font-size:.8rem;color:var(--text2);margin-bottom:6px;}
+.crow{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:.7rem;}
+.cbw{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden;}
+.cb{height:100%;border-radius:4px;}
+
+/* MODE TOGGLE */
+.mode-row{display:flex;gap:7px;width:100%;max-width:340px;}
+.mbtn{flex:1;padding:7px;border:none;border-radius:10px;font-family:'Fredoka One';
+  font-size:.75rem;cursor:pointer;transition:all .2s;opacity:.55;}
+.mbtn.on{opacity:1;transform:scale(1.03);}
+.mbtn-n{background:linear-gradient(135deg,#ff5533,#ffcc00);color:#1a0000;}
+.mbtn-c{background:linear-gradient(135deg,#440088,#9944ff);color:#fff;}
+
+/* PANELS */
+.sr{display:flex;flex-direction:column;gap:9px;overflow-y:auto;}
+.sr::-webkit-scrollbar{width:3px;}.sr::-webkit-scrollbar-thumb{background:var(--border);}
+.pnl{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:11px;flex-shrink:0;}
+.pnl-cu{background:rgba(80,0,150,.2);border-color:rgba(153,68,255,.35);}
+.pnl-ice{background:rgba(0,80,150,.2);border-color:rgba(0,180,255,.35);}
+.pt{font-family:'Fredoka One';font-size:.85rem;margin-bottom:7px;}
+.ptg{color:#ffd700;}.ptt{color:#66ffcc;}.ptgr{color:#44ff88;}.ptcu{color:var(--cursed2);}.ptice{color:var(--ice);}
+.lbw{background:rgba(0,0,0,.35);border-radius:8px;height:9px;overflow:hidden;margin-bottom:5px;}
+.lb{height:100%;border-radius:8px;background:linear-gradient(90deg,#ffcc00,#ff6644);transition:width .5s;}
+.li{font-size:.7rem;color:var(--text2);display:flex;justify-content:space-between;margin-bottom:6px;}
+.xbtn{width:100%;padding:6px;border:none;border-radius:9px;font-family:'Fredoka One';font-size:.76rem;cursor:pointer;transition:all .2s;}
+.xg{background:linear-gradient(135deg,#ffcc00,#ff9900);color:#1a0800;}
+.xt{background:linear-gradient(135deg,#66ffcc,#4488ff);color:#000;}
+.xp{background:linear-gradient(135deg,#ff44cc,#aa0066);color:#fff;}
+.xcu{background:linear-gradient(135deg,#9944ff,#440088);color:#fff;}
+.xice{background:linear-gradient(135deg,#00ccff,#0066aa);color:#fff;}
+.xbtn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.xbtn:disabled{opacity:.3;cursor:not-allowed;transform:none;filter:none;}
+.slts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.slt{width:68px;height:74px;border:2px dashed var(--border);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;background:rgba(0,0,0,.2);font-size:1.3rem;}
+.slt.fl{border-style:solid;background:var(--card2);}
+.slt:hover{border-color:#4499ff;}.slt.lk{opacity:.2;cursor:not-allowed;pointer-events:none;}
+.sn{font-size:.52rem;color:var(--text2);text-align:center;max-width:64px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.si{font-size:.56rem;color:#ffd700;font-weight:800;}
+.bign{font-size:1.2rem;font-weight:900;color:#ffd700;}
+.sub{font-size:.68rem;color:var(--text2);margin-top:2px;}
+
+/* COLLECTION */
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+.stl{font-family:'Fredoka One';font-size:1.15rem;background:linear-gradient(120deg,#ff6644,#ffcc00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.fils{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.fb{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:3px 10px;
+  font-size:.68rem;font-weight:800;cursor:pointer;color:var(--text2);transition:all .2s;font-family:'Nunito';}
+.fb:hover{border-color:#4499ff;color:var(--text);}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
+.ac{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 6px;
+  text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.ac:hover{transform:translateY(-2px);}
+.ac.no{opacity:.28;filter:grayscale(.5);}
+.ae{font-size:1.9rem;display:block;margin-bottom:3px;}
+.an{font-size:.68rem;font-weight:800;margin-bottom:2px;}
+.ar{font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.7px;}
+.ai{font-size:.6rem;color:#ffd700;margin-top:2px;}
+.cnt{position:absolute;top:3px;right:4px;background:rgba(0,0,0,.65);border-radius:5px;
+  padding:1px 5px;font-size:.6rem;font-weight:800;}
+
+/* SHOP */
+.shtl{font-family:'Fredoka One';font-size:1.05rem;color:#ffd700;margin-bottom:7px;}
+.stmr{display:flex;align-items:center;gap:7px;font-size:.7rem;color:var(--text2);margin-bottom:10px;}
+.tbw{flex:1;height:4px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden;}
+.tbar{height:100%;background:linear-gradient(90deg,#44ff88,#ffcc00);transition:width 1s linear;border-radius:4px;}
+.sgrd{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;}
+.scd{background:var(--card);border:1px solid var(--border);border-radius:13px;
+  padding:12px 9px;text-align:center;transition:all .2s;}
+.scd:hover{transform:translateY(-2px);}
+.se{font-size:2.4rem;display:block;margin-bottom:4px;}
+.snm{font-weight:800;font-size:.78rem;margin-bottom:3px;}
+.srar{font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.spr{display:block;background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.3);
+  border-radius:14px;padding:3px 9px;font-size:.74rem;font-weight:800;color:#ffd700;margin-bottom:4px;}
+.bb{width:100%;padding:6px;border:none;border-radius:9px;font-family:'Fredoka One';
+  font-size:.78rem;cursor:pointer;background:linear-gradient(135deg,#ffcc00,#ff9900);
+  color:#1a0800;transition:all .2s;}
+.bb:hover{filter:brightness(1.1);}
+.bb:disabled{opacity:.38;cursor:not-allowed;filter:none;}
+.cpp{background:var(--card);border:1px solid var(--border);border-radius:13px;
+  padding:12px;height:fit-content;position:sticky;top:0;}
+.cpp select,.cpp input{width:100%;background:var(--card2);border:1px solid var(--border);
+  color:var(--text);border-radius:9px;padding:6px 9px;font-family:'Nunito';font-size:.76rem;margin-bottom:6px;}
+.cpv{text-align:center;padding:10px;background:rgba(0,0,0,.25);border-radius:9px;
+  margin:6px 0;min-height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.orow{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+.ob{padding:3px 7px;background:var(--card2);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);cursor:pointer;font-size:.76rem;transition:all .15s;font-family:'Nunito';}
+.ob:hover,.ob.sl{border-color:#ff44cc;color:#ff44cc;}
+
+/* ══════════ CURSED SCREEN ══════════ */
+#s-cursed{background:radial-gradient(ellipse at 50% 0%,rgba(100,0,200,.2),transparent 60%);}
+.curs-banner{background:linear-gradient(135deg,rgba(60,0,140,.7),rgba(130,0,200,.35));
+  border:2px solid rgba(153,68,255,.6);border-radius:18px;padding:18px;
+  text-align:center;margin-bottom:16px;position:relative;overflow:hidden;}
+.curs-banner::before{content:'☠️';position:absolute;font-size:5rem;opacity:.06;
+  top:0;left:50%;transform:translateX(-50%);}
+.curs-title{font-family:'Fredoka One';font-size:1.5rem;color:var(--cursed2);
+  text-shadow:0 0 20px var(--cursed2);margin-bottom:5px;}
+.curs-sub{font-size:.78rem;color:#cc88ff;}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:680px){.cgrid{grid-template-columns:1fr 1fr;}}
+.ccard{background:rgba(50,0,120,.4);border:1px solid rgba(153,68,255,.4);
+  border-radius:14px;padding:14px 11px;text-align:center;}
+.ccardtit{font-family:'Fredoka One';font-size:.9rem;color:var(--cursed2);margin-bottom:7px;}
+
+/* cursed frags */
+.cfrag-box{display:flex;align-items:center;gap:10px;background:rgba(50,0,120,.3);
+  border:1px solid rgba(153,68,255,.35);border-radius:10px;padding:9px 13px;margin-bottom:9px;}
+.cfrag-val{font-family:'Fredoka One';font-size:1.2rem;color:var(--cursed2);}
+.cfrag-lbl{font-size:.7rem;color:#cc88ff;}
+.curs-section{margin-bottom:18px;}
+.curs-section-title{font-family:'Fredoka One';font-size:1rem;color:var(--cursed2);
+  margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+
+/* shop in cursed */
+.exchange-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.excard{background:rgba(40,0,100,.4);border:1px solid rgba(153,68,255,.35);
+  border-radius:13px;padding:14px 10px;text-align:center;}
+.excard-title{font-family:'Fredoka One';font-size:.82rem;color:#cc88ff;margin-bottom:8px;}
+.excard-val{font-size:.75rem;color:var(--text2);margin-bottom:8px;}
+.excard .xbtn{font-size:.72rem;}
+
+/* admin pets */
+.admin-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.adpet-card{background:rgba(50,0,20,.55);border:2px solid rgba(255,0,85,.45);
+  border-radius:14px;padding:15px 11px;text-align:center;position:relative;overflow:hidden;}
+.adpet-card::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,0,85,.07),transparent);pointer-events:none;}
+.adpet-em{font-size:3.2rem;display:block;margin-bottom:5px;
+  filter:drop-shadow(0 0 10px rgba(255,0,85,.6));}
+.adpet-nm{font-family:'Fredoka One';font-size:1rem;color:#ff4488;margin-bottom:3px;}
+.adpet-inc{font-size:.75rem;font-weight:900;color:#ffd700;margin-bottom:6px;}
+.adpet-req{font-size:.68rem;color:#ff9999;margin-bottom:8px;}
+.claim-btn{width:100%;padding:8px;border:none;border-radius:10px;font-family:'Fredoka One';
+  font-size:.82rem;cursor:pointer;background:linear-gradient(135deg,#ff0055,#880022);
+  color:#fff;transition:all .2s;}
+.claim-btn:hover{filter:brightness(1.2);}
+.claim-btn:disabled{opacity:.35;cursor:not-allowed;filter:none;}
+
+/* puzzle */
+.puzzle-outer{background:rgba(0,0,0,.5);border-radius:10px;height:18px;overflow:hidden;
+  margin-bottom:6px;border:1px solid rgba(153,68,255,.3);}
+.puzzle-bar{height:100%;border-radius:10px;
+  background:linear-gradient(90deg,#440088,#9944ff,#cc00ff);transition:width .5s;
+  box-shadow:0 0 10px #9944ff88;}
+.puzzle-info{font-size:.72rem;color:#cc88ff;display:flex;justify-content:space-between;}
+
+/* ══════════ ICE MAP ══════════ */
+#s-icemap{background:radial-gradient(ellipse at 50% 0%,rgba(0,150,255,.15),transparent 60%);}
+.ice-header{background:linear-gradient(135deg,rgba(0,80,180,.5),rgba(0,150,255,.25));
+  border:2px solid rgba(0,200,255,.5);border-radius:18px;padding:18px;
+  text-align:center;margin-bottom:14px;position:relative;overflow:hidden;}
+.ice-header::before{content:'❄️';position:absolute;font-size:5rem;opacity:.07;
+  top:0;left:50%;transform:translateX(-50%);}
+.ice-title{font-family:'Fredoka One';font-size:1.5rem;color:var(--ice);
+  text-shadow:0 0 18px var(--ice);margin-bottom:5px;}
+.ice-sub{font-size:.78rem;color:#88ddff;}
+
+.ice-warning{background:rgba(255,50,50,.12);border:1px solid rgba(255,80,80,.4);
+  border-radius:12px;padding:13px;margin-bottom:13px;text-align:center;}
+.ice-warning-title{font-family:'Fredoka One';font-size:.9rem;color:#ff6666;margin-bottom:5px;}
+.ice-warning-desc{font-size:.74rem;color:#ffaaaa;}
+
+.ice-left{display:flex;flex-direction:column;align-items:center;gap:9px;}
+.ice-info-bar{width:100%;max-width:340px;background:rgba(0,80,150,.2);
+  border:1px solid rgba(0,180,255,.3);border-radius:13px;padding:10px 13px;}
+.ice-info-title{font-family:'Fredoka One';font-size:.8rem;color:var(--ice);margin-bottom:6px;}
+.ice-bonus-row{display:flex;align-items:center;gap:8px;font-size:.74rem;color:#88ddff;margin-bottom:4px;}
+
+/* stats */
+.statt{font-family:'Fredoka One';font-size:1.15rem;background:linear-gradient(120deg,#4499ff,#bb44ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
+.srow{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.srl{color:var(--text2);font-size:.8rem;}.srv{font-weight:800;font-size:.85rem;}
+
+/* MODALS */
+.ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.78);
+  backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.mo{background:var(--card);border:2px solid var(--border);border-radius:21px;
+  padding:22px 26px;max-width:320px;width:92%;text-align:center;
+  animation:pop .35s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;}
+.mo-cu{background:linear-gradient(135deg,rgba(35,0,75,.96),rgba(60,0,130,.96))!important;border-color:rgba(153,68,255,.7)!important;}
+.mo-ice{background:linear-gradient(135deg,rgba(0,20,60,.96),rgba(0,50,100,.96))!important;border-color:rgba(0,200,255,.6)!important;}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.rl{font-size:.74rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.rani{font-size:4.5rem;line-height:1;margin:6px 0;animation:fl 2s ease-in-out infinite;}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.rnm{font-family:'Fredoka One';font-size:1.25rem;margin-bottom:3px;}
+.rrar{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.rval{font-size:.85rem;color:#ffd700;font-weight:800;margin-bottom:3px;}
+.rdup{background:rgba(102,255,204,.1);border:1px solid rgba(102,255,204,.3);
+  border-radius:8px;padding:5px;font-size:.74rem;color:#66ffcc;margin:5px 0;}
+.rbtns{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
+.rb{flex:1;min-width:70px;padding:7px;border:none;border-radius:10px;font-family:'Fredoka One';
+  font-size:.8rem;cursor:pointer;transition:all .2s;}
+.rb.kp{background:linear-gradient(135deg,#44ff88,#00cc66);color:#001a0d;}
+.rb.sv{background:linear-gradient(135deg,#ff5533,#cc2200);color:#fff;}
+.rb.eq{background:linear-gradient(135deg,#4499ff,#0044cc);color:#fff;}
+.rb.cl{background:var(--card2);border:1px solid var(--border);color:var(--text);}
+.rb:hover{filter:brightness(1.15);}
+.pem{font-size:3.8rem;display:block;margin-bottom:4px;}
+.pnm2{font-family:'Fredoka One';font-size:1.15rem;margin-bottom:2px;}
+.prar2{font-size:.67rem;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;}
+.pst{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:11px;text-align:left;}
+.ps{background:rgba(0,0,0,.25);border-radius:7px;padding:5px 8px;}
+.psl{font-size:.6rem;color:var(--text2);}.psv{font-size:.78rem;font-weight:800;}
+.pbtns{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* GLOW EFFECTS */
+.glow-ultra{box-shadow:0 0 30px rgba(0,238,255,.5);animation:pU 2s ease-in-out infinite;}
+.glow-colossal{box-shadow:0 0 34px rgba(255,136,0,.55);animation:pC 2s ease-in-out infinite;}
+.glow-godly{box-shadow:0 0 38px rgba(255,221,0,.6);animation:pG 2s ease-in-out infinite;}
+.glow-admin{box-shadow:0 0 44px rgba(255,0,85,.7);animation:pA 1.5s ease-in-out infinite;}
+.glow-ice-ultra{box-shadow:0 0 30px rgba(0,238,255,.5),0 0 60px rgba(136,238,255,.3);animation:pU 2s ease-in-out infinite;}
+@keyframes pU{0%,100%{box-shadow:0 0 22px rgba(0,238,255,.45)}50%{box-shadow:0 0 50px rgba(0,238,255,.85)}}
+@keyframes pC{0%,100%{box-shadow:0 0 25px rgba(255,136,0,.5)}50%{box-shadow:0 0 55px rgba(255,136,0,.9)}}
+@keyframes pG{0%,100%{box-shadow:0 0 28px rgba(255,221,0,.55)}50%{box-shadow:0 0 60px rgba(255,221,0,.95)}}
+@keyframes pA{0%,100%{box-shadow:0 0 38px rgba(255,0,85,.6)}50%{box-shadow:0 0 75px rgba(255,0,85,.95)}}
+
+@keyframes cpulse{0%,100%{text-shadow:0 0 8px #9944ff,0 0 18px #cc00ff}50%{text-shadow:0 0 18px #cc00ff,0 0 35px #ff00ff}}
+.ctext{animation:cpulse 2s ease-in-out infinite;}
+@keyframes icepulse{0%,100%{text-shadow:0 0 8px #00ccff,0 0 18px #88eeff}50%{text-shadow:0 0 18px #88eeff,0 0 35px #ffffff}}
+.itext{animation:icepulse 2s ease-in-out infinite;}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-2px,3px)}80%{transform:translate(2px,-3px)}}
+.shake{animation:shake .5s ease;}
+
+.fi{position:fixed;pointer-events:none;z-index:400;font-family:'Fredoka One';
+  font-size:.88rem;color:#ffd700;text-shadow:0 0 7px #ffcc0099;animation:fu 1.4s ease forwards;}
+@keyframes fu{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-65px)}}
+.fi-cu{color:var(--cursed2)!important;text-shadow:0 0 7px var(--cursed2)!important;}
+.fi-ice{color:var(--ice)!important;text-shadow:0 0 7px var(--ice)!important;}
+#cc{position:fixed;inset:0;pointer-events:none;z-index:200;}
+#toast{position:fixed;bottom:calc(var(--tab)+10px);left:50%;
+  transform:translateX(-50%) translateY(80px);background:var(--card2);
+  border:1px solid var(--border);border-radius:17px;padding:7px 18px;
+  font-weight:800;font-size:.8rem;z-index:500;transition:transform .3s;white-space:nowrap;max-width:88vw;}
+#toast.on{transform:translateX(-50%) translateY(0);}
+#toast.tcu{background:rgba(50,0,120,.95)!important;border-color:var(--cursed2)!important;color:var(--cursed2)!important;}
+#toast.tice{background:rgba(0,30,80,.95)!important;border-color:var(--ice)!important;color:var(--ice)!important;}
+
+/* divider */
+.dv{height:1px;background:rgba(255,255,255,.07);margin:10px 0;}
+.sec-h{font-family:'Fredoka One';font-size:.88rem;color:var(--text2);margin-bottom:9px;}
+
+@media(max-width:640px){
+  #s-spin.on,#s-icemap.on,#s-shop.on{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="update-ribbon"><span>UPDATE 1</span></div>
+<canvas id="cc"></canvas>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo" id="logo-txt">🎰 Animal Roulette</div>
+  <div class="topstats">
+    <div class="badge">💰<span class="gv" id="ng">500</span></div>
+    <div class="badge">💎<span class="fv" id="nf">0</span></div>
+    <div class="badge">☠️<span class="cv" id="ncf">0</span></div>
+    <div class="map-badge" id="map-badge" style="display:none">❄️ Gelo</div>
+  </div>
+</div>
+
+<!-- ═══ SPIN SCREEN ═══ -->
+<div class="sc" id="s-spin">
+  <div class="sl">
+    <div class="ww" id="ww">
+      <div class="wring" id="wring"><canvas id="wc"></canvas></div>
+      <div class="ndl" id="ndl"></div>
+      <div class="cdot"></div>
+    </div>
+    <div class="mode-row">
+      <button class="mbtn mbtn-n on" id="mbn" onclick="setMode('normal')">🎰 Normal</button>
+      <button class="mbtn mbtn-c" id="mbc" onclick="setMode('cursed')">☠️ Amaldiçoado</button>
+    </div>
+    <button class="spbtn spbtn-normal" id="spbtn" onclick="spin()">🎰 GIRAR!</button>
+    <div class="scost" id="scost">Custo: <span style="color:#ffd700">💰 100</span></div>
+    <div class="cbox">
+      <div class="ctit" id="ctit">⚡ Chances</div>
+      <div id="ct"></div>
+    </div>
+  </div>
+  <div class="sr">
+    <div class="pnl" id="evt-banner" style="display:none">
+      <div class="pt" id="evt-title">🎉 Evento!</div>
+      <div style="font-size:.7rem;color:var(--text2)" id="evt-desc2"></div>
+    </div>
+    <div class="pnl pnl-cu" id="cursed-info" style="display:none">
+      <div class="pt ptcu">☠️ Modo Amaldiçoado</div>
+      <div style="font-size:.72rem;color:#cc88ff;margin-bottom:6px">Custo: <b>10.000 💎 fragmentos</b><br>Drops: Mítico+ · Chance de ☠️ frags!</div>
+      <div style="font-size:.7rem;color:var(--cursed2)">☠️ Frags: <b id="ci-cf">0</b></div>
+    </div>
+    <div class="pnl">
+      <div class="pt ptg">⭐ Sorte &nbsp;<span id="lvb">Lv.1</span></div>
+      <div class="lbw"><div class="lb" id="lb" style="width:5%"></div></div>
+      <div class="li"><span>Sorte: <b id="lvn">1</b>/20</span><span id="lvc" style="color:#ffd700"></span></div>
+      <button class="xbtn xg" id="lbtn" onclick="upLuck()">✨ Melhorar Sorte</button>
+    </div>
+    <div class="pnl">
+      <div class="pt ptt">🐾 Pets &nbsp;<span id="slbl" style="font-size:.68rem;color:var(--text2)">1/1</span></div>
+      <div class="slts" id="slgrid"></div>
+      <button class="xbtn xt" id="slbtn" onclick="unlockSlot()">🔓 Desbloquear Slot</button>
+    </div>
+    <div class="pnl">
+      <div class="pt ptgr">💸 Renda Passiva</div>
+      <div class="bign" id="incd">💰 0/s</div>
+      <div class="sub">Total: <span style="color:#ffd700" id="totle">0</span></div>
+    </div>
+    <div class="pnl">
+      <div class="pt" style="color:#aaa">🎰 Giros</div>
+      <div class="bign" id="spinctr">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COLLECTION ═══ -->
+<div class="sc" id="s-coll">
+  <div class="ch">
+    <div class="stl">📚 Coleção</div>
+    <div id="cprog" style="font-size:.74rem;color:var(--text2)"></div>
+  </div>
+  <div class="fils" id="fils"></div>
+  <div class="agrid" id="agrid"></div>
+</div>
+
+<!-- ═══ SHOP ═══ -->
+<div class="sc" id="s-shop">
+  <div>
+    <div class="shtl" id="shop-title-el">🏪 Loja</div>
+    <div class="stmr">🔄 <b id="stv">5:00</b>
+      <div class="tbw"><div class="tbar" id="tbar" style="width:100%"></div></div>
+    </div>
+    <div class="sgrd" id="sgrd"></div>
+  </div>
+  <div class="cpp">
+    <div class="pt" style="color:#ff44cc;margin-bottom:8px">✨ Customizar</div>
+    <select id="csel" onchange="updCust()"><option value="">-- Pet --</option></select>
+    <div class="cpv" id="cpv">
+      <span style="font-size:1.8rem">🐾</span>
+      <span style="color:var(--text2);font-size:.7rem">Nenhum selecionado</span>
+    </div>
+    <div style="font-size:.68rem;color:var(--text2);margin-bottom:3px">Nome:</div>
+    <input id="cnm" type="text" placeholder="Nome personalizado..." maxlength="20">
+    <div style="font-size:.68rem;color:var(--text2);margin-bottom:4px">Roupinha:</div>
+    <div class="orow" id="orow"></div>
+    <button class="xbtn xp" onclick="apCust()">💅 Aplicar</button>
+  </div>
+</div>
+
+<!-- ═══ CURSED SCREEN ═══ -->
+<div class="sc" id="s-cursed">
+  <div class="curs-banner">
+    <div class="curs-title ctext">☠️ MUNDO AMALDIÇOADO ☠️</div>
+    <div class="curs-sub">Update 1 — Troque fragmentos, ganhe poder absoluto</div>
+  </div>
+
+  <!-- SEUS FRAGS -->
+  <div class="curs-section">
+    <div class="curs-section-title">💎 Seus Fragmentos</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+      <div class="cfrag-box" style="flex-direction:column;align-items:flex-start">
+        <div style="font-size:.68rem;color:#aaa;margin-bottom:2px">Fragmentos Normais</div>
+        <div class="cfrag-val" style="color:#66ffcc" id="cf-norm">0</div>
+      </div>
+      <div class="cfrag-box" style="flex-direction:column;align-items:flex-start">
+        <div style="font-size:.68rem;color:#aaa;margin-bottom:2px">Frags ☠️ Amaldiçoados</div>
+        <div class="cfrag-val" id="cf-curs">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOJA CURSED (troca) -->
+  <div class="curs-section">
+    <div class="curs-section-title">🔄 Câmbio de Fragmentos</div>
+    <div class="exchange-grid">
+      <div class="excard">
+        <div class="excard-title">💎 → ☠️</div>
+        <div class="excard-val">100.000 💎 frags<br>⬇️<br><b style="color:var(--cursed2)">100 ☠️ frags</b></div>
+        <button class="xbtn xcu" onclick="exchange100k()">Trocar</button>
+      </div>
+      <div class="excard">
+        <div class="excard-title">💎 → ☠️ (Grande)</div>
+        <div class="excard-val">1.000.000 💎 frags<br>⬇️<br><b style="color:var(--cursed2)">1.000 ☠️ frags</b></div>
+        <button class="xbtn xcu" onclick="exchange1m()">Trocar</button>
+      </div>
+    </div>
+    <div style="font-size:.72rem;color:#cc88ff;margin-bottom:6px">Ou: troque ☠️ por <b>giros amaldiçoados</b>:</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <button class="xbtn xcu" onclick="buySpinWithCursed(1)" style="font-size:.7rem">1 giro = 10 ☠️</button>
+      <button class="xbtn xcu" onclick="buySpinWithCursed(10)" style="font-size:.7rem">10 giros = 90 ☠️</button>
+    </div>
+    <div style="font-size:.7rem;color:#cc88ff;margin-bottom:5px">Giros amaldiçoados pré-comprados: <b style="color:var(--cursed2)" id="stored-cursed-spins">0</b></div>
+  </div>
+
+  <!-- ADMIN PETS -->
+  <div class="curs-section">
+    <div class="curs-section-title">👑 Pets Admin — Requerem ☠️ Frags</div>
+    <!-- PUZZLE BAR -->
+    <div style="margin-bottom:12px">
+      <div class="puzzle-outer"><div class="puzzle-bar" id="puzzle-bar" style="width:0%"></div></div>
+      <div class="puzzle-info"><span id="puzzle-txt">0 / 1.000.000 ☠️</span><span id="puzzle-pct">0%</span></div>
+    </div>
+    <div class="admin-cards">
+      <div class="adpet-card">
+        <span class="adpet-em">🐱</span>
+        <div class="adpet-nm">Cappu</div>
+        <div style="font-size:.6rem;color:#ff4488;font-weight:900;letter-spacing:1px;margin-bottom:4px">⚙️ ADMIN</div>
+        <div class="adpet-inc">💰 10⁴⁰/s</div>
+        <div class="adpet-req">1.000.000 ☠️ frags</div>
+        <button class="claim-btn" id="cappu-btn" onclick="claimAdmin('cappu')" disabled>🔒 Bloqueado</button>
+      </div>
+      <div class="adpet-card">
+        <span class="adpet-em">🐉</span>
+        <div class="adpet-nm">Draxen</div>
+        <div style="font-size:.6rem;color:#ff4488;font-weight:900;letter-spacing:1px;margin-bottom:4px">⚙️ ADMIN</div>
+        <div class="adpet-inc">💰 10⁴⁰/s</div>
+        <div class="adpet-req">1.000.000 ☠️ frags</div>
+        <button class="claim-btn" id="draxen-btn" onclick="claimAdmin('draxen')" disabled>🔒 Bloqueado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA DE GELO -->
+  <div class="curs-section">
+    <div class="curs-section-title">❄️ Acesso ao Mapa de Gelo</div>
+    <div style="background:rgba(0,80,160,.25);border:1px solid rgba(0,180,255,.35);border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="font-size:.8rem;color:#88ddff;margin-bottom:8px">
+        Troque <b style="color:var(--cursed2)">1.000.000 ☠️ frags</b> por acesso ao <b style="color:var(--ice)">Mapa de Gelo</b>!
+      </div>
+      <div style="font-size:.72rem;color:#aaa;margin-bottom:8px">
+        ⚠️ <b style="color:#ff9999">ATENÇÃO:</b> Você <b>perde todos seus pets atuais</b> e recomeça no mapa de gelo.<br>
+        Lá você encontra versões glaciais de todos os pets com <b style="color:#88ddff">5x mais renda</b>!
+      </div>
+      <button class="xbtn xice" onclick="tryEnterIceMap()" id="ice-access-btn">❄️ Acessar Mapa de Gelo (1M ☠️)</button>
+    </div>
+    <div class="cgrid">
+      <div class="ccard" style="background:rgba(0,50,120,.4);border-color:rgba(0,180,255,.35)">
+        <div class="ccardtit" style="color:var(--ice)">⚡ Ultra Glacial</div>
+        <div style="font-size:.73rem;color:#88ddff">5M/s por pet<br>versão gelo do Ultra</div>
+      </div>
+      <div class="ccard" style="background:rgba(0,50,120,.4);border-color:rgba(0,180,255,.35)">
+        <div class="ccardtit" style="color:var(--ice)">🌋 Colossal Gelo</div>
+        <div style="font-size:.73rem;color:#88ddff">1.5B/s por pet<br>versão gelo do Colossal</div>
+      </div>
+      <div class="ccard" style="background:rgba(0,50,120,.4);border-color:rgba(0,180,255,.35)">
+        <div class="ccardtit" style="color:var(--ice)">🌟 Deus Glacial</div>
+        <div style="font-size:.73rem;color:#88ddff">5B/s por pet<br>versão gelo do Deus</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMO CONSEGUIR -->
+  <div class="curs-section">
+    <div class="curs-section-title">📖 Como funciona</div>
+    <div class="cgrid">
+      <div class="ccard">
+        <div class="ccardtit">🎰 Giro ☠️</div>
+        <div style="font-size:.72rem;color:#cc88ff">Custa <b>10.000 💎</b> por giro. Dropa apenas Mítico+. 30% chance de frags ☠️!</div>
+      </div>
+      <div class="ccard">
+        <div class="ccardtit">🏪 Loja ☠️</div>
+        <div style="font-size:.72rem;color:#cc88ff">20% de chance ao atualizar (5min). Troque frags normais por ☠️!</div>
+      </div>
+      <div class="ccard">
+        <div class="ccardtit">⏱️ Duração</div>
+        <div style="font-size:.72rem;color:#cc88ff">A loja ☠️ dura 5 minutos (junto à loja normal). Depois some até próxima chance.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ICE MAP ═══ -->
+<div class="sc" id="s-icemap">
+  <!-- Shows only when in ice map -->
+  <div class="ice-left">
+    <div style="background:rgba(0,80,180,.3);border:2px solid rgba(0,200,255,.4);border-radius:18px;padding:16px;text-align:center;width:100%;max-width:340px;margin-bottom:8px">
+      <div class="ice-title itext">❄️ Mapa de Gelo</div>
+      <div style="font-size:.74rem;color:#88ddff">Todos os pets têm 5x mais renda!</div>
+    </div>
+    <div class="ww" id="wwice">
+      <div class="wring" id="wring-ice"><canvas id="wcice"></canvas></div>
+      <div class="ndl" style="border-top-color:#00ccff;filter:drop-shadow(0 2px 5px #00ccffaa)"></div>
+      <div class="cdot" style="background:radial-gradient(circle,#fff 0%,#00ccff 60%,#0066aa 100%);box-shadow:0 0 12px #00ccff99"></div>
+    </div>
+    <button class="spbtn spbtn-ice" id="ice-spbtn" onclick="spinIce()">❄️ GIRAR (GELO)</button>
+    <div class="scost" id="ice-scost">Custo: <span style="color:var(--ice)">💰 100</span></div>
+    <div class="cbox" style="border-color:rgba(0,180,255,.3)">
+      <div class="ctit" style="color:var(--ice)">❄️ Chances (Gelo)</div>
+      <div id="ict"></div>
+    </div>
+  </div>
+  <div class="sr">
+    <div class="pnl pnl-ice">
+      <div class="pt ptice">❄️ Mapa de Gelo</div>
+      <div style="font-size:.72rem;color:#88ddff;margin-bottom:8px">Bem-vindo ao mapa glacial! Todos os pets aqui têm <b style="color:var(--ice)">5x</b> mais renda que no mapa normal.</div>
+      <button class="xbtn" style="background:rgba(255,50,50,.2);border:1px solid rgba(255,80,80,.4);color:#ff6666" onclick="leaveIceMap()">⬅️ Voltar ao Mapa Normal</button>
+    </div>
+    <div class="pnl">
+      <div class="pt ptg">⭐ Sorte &nbsp;<span id="ice-lvb">Lv.1</span></div>
+      <div class="lbw"><div class="lb" style="background:linear-gradient(90deg,#00ccff,#88eeff)" id="icelb" style="width:5%"></div></div>
+      <div class="li"><span>Sorte: <b id="ice-lvn">1</b>/20</span><span id="ice-lvc" style="color:var(--ice)"></span></div>
+      <button class="xbtn xice" id="ice-lbtn" onclick="upLuckIce()">✨ Melhorar Sorte</button>
+    </div>
+    <div class="pnl">
+      <div class="pt ptice">🐾 Pets (Gelo) &nbsp;<span id="ice-slbl" style="font-size:.68rem;color:var(--text2)">1/1</span></div>
+      <div class="slts" id="ice-slgrid"></div>
+      <button class="xbtn xice" id="ice-slbtn" onclick="unlockSlotIce()">🔓 Slot</button>
+    </div>
+    <div class="pnl">
+      <div class="pt ptice">💸 Renda (Gelo)</div>
+      <div class="bign" style="color:var(--ice)" id="ice-incd">❄️ 0/s</div>
+      <div class="sub">Total: <span style="color:var(--ice)" id="ice-totle">0</span></div>
+    </div>
+    <div class="pnl">
+      <div class="pt ptice">🎰 Giros (Gelo)</div>
+      <div class="bign" style="color:var(--ice)" id="ice-spinctr">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="sc" id="s-stats">
+  <div class="statt">📊 Estatísticas</div>
+  <div id="stbody"></div>
+</div>
+
+<!-- RESULT MODAL -->
+<div class="ov" id="rov">
+  <div class="mo" id="rcard">
+    <div class="rl" id="rlbl">Você ganhou!</div>
+    <div class="rani" id="rani">🐶</div>
+    <div class="rnm" id="rnm">Animal</div>
+    <div class="rrar" id="rrar">Comum</div>
+    <div class="rval" id="rval">💰 0/s</div>
+    <div class="rdup" id="rdup" style="display:none"></div>
+    <div class="rbtns" id="rbtns"></div>
+  </div>
+</div>
+
+<!-- PET MODAL -->
+<div class="ov" id="pov">
+  <div class="mo" id="pcard">
+    <span class="pem" id="pem">🐶</span>
+    <div class="pnm2" id="pnm2">Animal</div>
+    <div class="prar2" id="prar2">Comum</div>
+    <div class="pst" id="pst2"></div>
+    <div class="pbtns" id="pbtns2"></div>
+  </div>
+</div>
+
+<!-- ICE MAP CONFIRM MODAL -->
+<div class="ov" id="ice-confirm-ov">
+  <div class="mo mo-ice">
+    <div style="font-size:3rem;margin-bottom:10px">❄️☠️❄️</div>
+    <div style="font-family:'Fredoka One';font-size:1.2rem;color:var(--ice);margin-bottom:8px">Entrar no Mapa de Gelo?</div>
+    <div style="font-size:.78rem;color:#88ddff;margin-bottom:6px">
+      Isso vai <b style="color:#ff6666">resetar todos os seus pets</b> do mapa normal.<br>
+      Você começará do zero no mapa de gelo.<br>
+      Custa <b style="color:var(--cursed2)">1.000.000 ☠️ frags</b>.
+    </div>
+    <div style="font-size:.74rem;color:#aaa;margin-bottom:12px">Ouro, fragmentos e sorte são <b>mantidos</b>. Apenas os pets e slots reiniciam.</div>
+    <div style="display:flex;gap:8px">
+      <button class="rb kp" style="background:linear-gradient(135deg,#00ccff,#0066aa);color:#fff" onclick="confirmEnterIce()">❄️ Entrar!</button>
+      <button class="rb cl" onclick="document.getElementById('ice-confirm-ov').classList.remove('on')">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div id="tabs">
+  <button class="tb on" data-tab="spin" onclick="goTab('spin',this)"><span class="i">🎰</span>Girar</button>
+  <button class="tb" data-tab="coll" onclick="goTab('coll',this)"><span class="i">📚</span>Coleção</button>
+  <button class="tb" data-tab="shop" onclick="goTab('shop',this)"><span class="i">🏪</span>Loja</button>
+  <button class="tb ctab" data-tab="cursed" onclick="goTab('cursed',this)"><span class="i">☠️</span>Maldito</button>
+  <button class="tb ictab" data-tab="icemap" onclick="goTab('icemap',this)" id="ice-tab" style="display:none"><span class="i">❄️</span>Gelo</button>
+  <button class="tb" data-tab="stats" onclick="goTab('stats',this)"><span class="i">📊</span>Stats</button>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════
+   RARIDADES
+══════════════════════════════════ */
+const RARITIES=[
+  {id:'common',   l:'Comum',    c:'#aaaaaa',w:'#555',   ch:55},
+  {id:'rare',     l:'Raro',     c:'#4499ff',w:'#1144bb',ch:25},
+  {id:'epic',     l:'Épico',    c:'#bb44ff',w:'#6611bb',ch:12},
+  {id:'mythic',   l:'Mítico',   c:'#ff6644',w:'#aa3311',ch:5},
+  {id:'legendary',l:'Lendário', c:'#ffcc00',w:'#aa8800',ch:2},
+  {id:'secret',   l:'Secreto',  c:'#ff44cc',w:'#aa1177',ch:1},
+  {id:'ultra',    l:'Ultra',    c:'#00eeff',w:'#007799',ch:1},
+  {id:'colossal', l:'Colossal', c:'#ff8800',w:'#994400',ch:0.7},
+  {id:'godly',    l:'Deus',     c:'#ffdd00',w:'#886600',ch:0.5},
+  {id:'admin',    l:'Admin',    c:'#ff0055',w:'#880022',ch:0,adminOnly:true},
+];
+// ICE RARITIES (same but ice flavored)
+const ICE_RARITIES=RARITIES.filter(r=>!r.adminOnly).map(r=>({
+  ...r,
+  id:'ice_'+r.id,
+  l:'❄️'+r.l,
+  c:blendToIce(r.c),
+  w:darken(blendToIce(r.c),.5),
+}));
+function blendToIce(hex){
+  // shift hue toward cyan
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.floor(r*.3+0*.7);g=Math.floor(g*.4+180*.6);b=Math.floor(b*.3+255*.7);
+  r=Math.min(255,r);g=Math.min(255,g);b=Math.min(255,b);
+  return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+function darken(hex,amt){
+  let r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;
+  return`#${Math.floor(r*amt).toString(16).padStart(2,'0')}${Math.floor(g*amt).toString(16).padStart(2,'0')}${Math.floor(b*amt).toString(16).padStart(2,'0')}`;
+}
+
+/* ══════════════════════════════════
+   ANIMALS
+══════════════════════════════════ */
+const BASE_AN=[
+  {id:'dog',e:'🐶',n:'Cachorrinho',r:'common',i:5,p:100},
+  {id:'cat',e:'🐱',n:'Gatinho',r:'common',i:6,p:120},
+  {id:'rabbit',e:'🐰',n:'Coelhinho',r:'common',i:7,p:140},
+  {id:'hamster',e:'🐹',n:'Hamster',r:'common',i:5,p:100},
+  {id:'chick',e:'🐤',n:'Pintinho',r:'common',i:4,p:80},
+  {id:'turtle',e:'🐢',n:'Tartaruga',r:'common',i:3,p:60},
+  {id:'fish',e:'🐟',n:'Peixinho',r:'common',i:5,p:100},
+  {id:'snail',e:'🐌',n:'Caracol',r:'common',i:2,p:40},
+  {id:'frog',e:'🐸',n:'Sapo',r:'common',i:6,p:120},
+  {id:'bug',e:'🐞',n:'Joaninha',r:'common',i:4,p:80},
+  {id:'fox',e:'🦊',n:'Raposa',r:'rare',i:25,p:500},
+  {id:'panda',e:'🐼',n:'Panda',r:'rare',i:30,p:600},
+  {id:'koala',e:'🐨',n:'Coala',r:'rare',i:28,p:560},
+  {id:'penguin',e:'🐧',n:'Pinguim',r:'rare',i:22,p:440},
+  {id:'dolphin',e:'🐬',n:'Golfinho',r:'rare',i:35,p:700},
+  {id:'parrot',e:'🦜',n:'Arara',r:'rare',i:27,p:540},
+  {id:'deer',e:'🦌',n:'Cervo',r:'rare',i:24,p:480},
+  {id:'hedge',e:'🦔',n:'Porco-Espinho',r:'rare',i:20,p:400},
+  {id:'otter',e:'🦦',n:'Lontra',r:'rare',i:32,p:640},
+  {id:'raccoon',e:'🦝',n:'Guaxinim',r:'rare',i:26,p:520},
+  {id:'tiger',e:'🐯',n:'Tigre',r:'epic',i:80,p:2000},
+  {id:'lion',e:'🦁',n:'Leão',r:'epic',i:90,p:2200},
+  {id:'elephant',e:'🐘',n:'Elefante',r:'epic',i:75,p:1800},
+  {id:'gorilla',e:'🦍',n:'Gorila',r:'epic',i:85,p:2100},
+  {id:'shark',e:'🦈',n:'Tubarão',r:'epic',i:100,p:2500},
+  {id:'eagle',e:'🦅',n:'Águia',r:'epic',i:70,p:1750},
+  {id:'wolf',e:'🐺',n:'Lobo',r:'epic',i:88,p:2200},
+  {id:'bear',e:'🐻',n:'Urso',r:'epic',i:78,p:1950},
+  {id:'croc',e:'🐊',n:'Crocodilo',r:'epic',i:95,p:2400},
+  {id:'octopus',e:'🐙',n:'Polvo',r:'epic',i:72,p:1800},
+  {id:'dragon',e:'🐲',n:'Dragão',r:'mythic',i:250,p:8000},
+  {id:'phoenix',e:'🦚',n:'Fênix',r:'mythic',i:280,p:9000},
+  {id:'narwhal',e:'🦄',n:'Narval',r:'mythic',i:260,p:8500},
+  {id:'manticore',e:'🦂',n:'Manticora',r:'mythic',i:300,p:10000},
+  {id:'griffin',e:'🦁',n:'Grifo',r:'mythic',i:270,p:8800},
+  {id:'kirin',e:'🦒',n:'Kirin',r:'mythic',i:240,p:7800},
+  {id:'hydra',e:'🐍',n:'Hidra',r:'mythic',i:320,p:10500},
+  {id:'chimera',e:'🐉',n:'Quimera',r:'mythic',i:290,p:9500},
+  {id:'basilisk',e:'🦎',n:'Basilisco',r:'mythic',i:310,p:10200},
+  {id:'leviathan',e:'🐳',n:'Leviatã',r:'mythic',i:350,p:11500},
+  {id:'cfox',e:'🦊',n:'Raposa Celestial',r:'legendary',i:800,p:40000},
+  {id:'scat',e:'🐱',n:'Gato Estelar',r:'legendary',i:850,p:42000},
+  {id:'cwolf',e:'🐺',n:'Lobo Cósmico',r:'legendary',i:900,p:45000},
+  {id:'gbird',e:'🦅',n:'Ave Galáctica',r:'legendary',i:820,p:41000},
+  {id:'abear',e:'🐻',n:'Urso Astral',r:'legendary',i:880,p:44000},
+  {id:'vserp',e:'🐍',n:'Serpente do Vazio',r:'legendary',i:950,p:47500},
+  {id:'tlion',e:'🦁',n:'Leão Trovejante',r:'legendary',i:870,p:43500},
+  {id:'idragon',e:'🐲',n:'Dragão de Gelo',r:'legendary',i:1000,p:50000},
+  {id:'tturtle',e:'🐢',n:'Tartaruga do Tempo',r:'legendary',i:920,p:46000},
+  {id:'lphoenix',e:'🦚',n:'Fênix da Luz',r:'legendary',i:960,p:48000},
+  {id:'gbeast',e:'🌟',n:'Besta Divina',r:'secret',i:3000,p:200000},
+  {id:'bhcat',e:'🐈',n:'Gato Buraco Negro',r:'secret',i:3200,p:210000},
+  {id:'uegg',e:'🥚',n:'Ovo do Universo',r:'secret',i:3500,p:230000},
+  {id:'cking',e:'👑',n:'Rei do Caos',r:'secret',i:4000,p:260000},
+  {id:'owolf',e:'🐺',n:'Lobo Ômega',r:'secret',i:3800,p:245000},
+  {id:'ephoenix',e:'🔥',n:'Fênix Eterna',r:'secret',i:4200,p:275000},
+  {id:'cdragon',e:'⚡',n:'Dragão da Criação',r:'secret',i:4500,p:300000},
+  {id:'vqueen',e:'🌑',n:'Rainha do Vazio',r:'secret',i:3600,p:235000},
+  {id:'sguard',e:'💫',n:'Guardião Estelar',r:'secret',i:5000,p:330000},
+  {id:'obeast',e:'🌈',n:'Besta Primordial',r:'secret',i:6000,p:400000},
+  // Update 1 — Ultra
+  {id:'ay_mi_gatito',e:'😼',n:'Ay Mi Gatito',r:'ultra',i:1000000,p:5000000},
+  {id:'t_rex',e:'🦖',n:'T-Rex',r:'colossal',i:300000000,p:50000000},
+  {id:'guepardo',e:'🐆',n:'Guepardo Divino',r:'godly',i:1000000000,p:500000000},
+  // New Ultra Update 1
+  {id:'imbu_time',e:'🦬',n:'No Tempo dos Imbu',r:'ultra',i:2000000,p:8000000},
+  {id:'lone_wolf',e:'🌕',n:'Lobo Solitário',r:'ultra',i:2000000,p:8000000},
+  // Admin (claimed via puzzle)
+  {id:'cappu',e:'🐱',n:'Cappu',r:'admin',i:'1e40',p:0,adminPet:true,cursedReq:1000000},
+  {id:'draxen',e:'🐉',n:'Draxen',r:'admin',i:'1e40',p:0,adminPet:true,cursedReq:1000000},
+];
+
+// Build ice versions of all non-admin animals
+const ICE_AN = BASE_AN.filter(a=>!a.adminPet).map(a=>{
+  const baseRar=RARITIES.find(r=>r.id===a.r);
+  const iceRarId='ice_'+a.r;
+  return {
+    id:'ice_'+a.id,
+    e:a.e,
+    n:'❄️ '+a.n,
+    r:iceRarId,
+    i:typeof a.i==='string'?a.i:a.i*5,
+    p:typeof a.p==='number'?a.p*5:a.p,
+    isIce:true,
+  };
+});
+
+let AN = [...BASE_AN]; // active animal pool (changes when on ice map)
+
+const OUTFITS=['👒','🎩','🪖','💎','🌸','⚡','🔥','❄️','🌟','🎭','🏆','🎪'];
+
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+let S={
+  gold:500, frags:0, cursedFrags:0,
+  luck:1, spins:0, slots:1, equipped:[], owned:{},
+  shop:[], shopSec:300, passive:0,
+  storedCursedSpins:0,
+  cursedShopActive:false, cursedShopSec:300,
+  onIceMap:false,
+  // ice map state
+  iceLuck:1, iceSpins:0, iceSlots:1, iceEquipped:[], iceOwned:{}, icePassive:0,
+  evtActive:false, evtName:'', evtDesc:'', evtEnds:0,
+};
+let spinMode='normal';
+let spinning=false;
+let shopInt=null, cursedShopInt=null;
+
+/* ══════════ HELPERS ══════════ */
+function getRar(id,ice=false){
+  if(ice)return ICE_RARITIES.find(r=>r.id===id)||ICE_RARITIES[0];
+  return RARITIES.find(r=>r.id===id)||RARITIES[0];
+}
+function getRarAny(id){return RARITIES.find(r=>r.id===id)||ICE_RARITIES.find(r=>r.id===id)||RARITIES[0];}
+function fmt(n){
+  const v=Number(n);
+  if(isNaN(v)||String(n).includes('e'))return String(n);
+  if(v>=1e12)return(v/1e12).toFixed(1)+'T';
+  if(v>=1e9)return(v/1e9).toFixed(1)+'B';
+  if(v>=1e6)return(v/1e6).toFixed(1)+'M';
+  if(v>=1e3)return(v/1e3).toFixed(1)+'K';
+  return Math.floor(v).toLocaleString();
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='on'+(type?' t'+type:'');
+  setTimeout(()=>t.className='',2800);
+}
+function mkb(p,cls,txt,fn){const b=document.createElement('button');b.className='rb '+cls;b.textContent=txt;b.onclick=fn;p.appendChild(b);}
+function spawnFI(txt,type=''){
+  const el=document.createElement('div');
+  el.className='fi'+(type?' fi-'+type:'');
+  el.textContent=txt;el.style.left=(12+Math.random()*70)+'%';
+  el.style.bottom=(55+Math.random()*90)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1400);
+}
+
+/* ══════════ LUCK ══════════ */
+function luckCost(l=S.luck){return Math.floor(500*Math.pow(2.2,l-1));}
+function getChances(cursed=false){
+  const pool=cursed?RARITIES.filter(r=>!r.adminOnly&&RARITIES.indexOf(r)>=3):RARITIES.filter(r=>!r.adminOnly);
+  const b=(S.luck-1)*.5;
+  const res={};
+  pool.forEach((r,i)=>{
+    let base=r.ch;
+    if(cursed)base=base*1.5;
+    res[r.id]=Math.max(0.01,base+(i>0?b*.35:-(b*.35*pool.length/(pool.length-1||1))));
+  });
+  return res;
+}
+function getIceChances(){
+  const pool=ICE_RARITIES;
+  const b=(S.iceLuck-1)*.5;
+  const res={};
+  pool.forEach((r,i)=>{
+    const base=RARITIES[i]?.ch||1;
+    res[r.id]=Math.max(0.01,base+(i>0?b*.35:-(b*.35*pool.length/(pool.length-1||1))));
+  });
+  return res;
+}
+function normCh(ch){
+  const t=Object.values(ch).reduce((a,b)=>a+b,0);
+  if(t===0)return ch;
+  const n={};for(const k in ch)n[k]=ch[k]/t*100;return n;
+}
+
+/* ══════════ WHEELS ══════════ */
+const wc=document.getElementById('wc'),wx=wc.getContext('2d');
+const wcice=document.getElementById('wcice'),wxi=wcice.getContext('2d');
+let wAng=0,wAngIce=0;
+
+function sizeWheel(){
+  const avH=window.innerHeight-56-50-24-250;
+  const avW=window.innerWidth*.55-24;
+  const w=Math.max(140,Math.min(avH,avW,380));
+  ['ww','wwice'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.width=w+'px';el.style.height=w+'px';}
+  });
+  wc.width=w;wc.height=w;
+  wcice.width=w;wcice.height=w;
+  drawW();drawWIce();
+}
+
+function drawWheel(ctx,ang,chFn,rarPool,overlay){
+  const W=ctx.canvas.width,cx=W/2,cy=W/2,r=cx-3;
+  ctx.clearRect(0,0,W,W);
+  const ch=normCh(chFn());
+  const slices=[];
+  for(const rar of rarPool){
+    const pct=(ch[rar.id]||0)/100;if(pct<=0)continue;
+    const cnt=Math.max(1,Math.round(pct*22));
+    for(let i=0;i<cnt;i++)slices.push({r:rar.id,a:(pct*Math.PI*2)/cnt,rar});
+  }
+  const interleaved=[];
+  const byR={};for(const s of slices)(byR[s.r]=byR[s.r]||[]).push(s);
+  const pools=rarPool.filter(r=>byR[r.id]?.length).map(r=>byR[r.id]);
+  let go=true;while(go){go=false;for(const p of pools){if(p.length){interleaved.push(p.shift());go=true;}}}
+  let sa=ang;
+  for(const s of interleaved){
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,sa,sa+s.a);ctx.closePath();
+    ctx.fillStyle=s.rar.w;ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=.7;ctx.stroke();
+    if(s.a>0.1){
+      const ma=sa+s.a/2,tx=cx+Math.cos(ma)*r*.68,ty=cy+Math.sin(ma)*r*.68;
+      ctx.save();ctx.translate(tx,ty);ctx.rotate(ma+Math.PI/2);
+      ctx.font=`bold ${Math.floor(r*.07)}px Nunito`;ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.rar.l[0],0,0);ctx.restore();
+    }
+    sa+=s.a;
+  }
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle=overlay?'rgba(0,200,255,.3)':'rgba(255,255,255,.08)';
+  ctx.lineWidth=2;ctx.stroke();
+  if(overlay){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='rgba(0,150,255,.08)';ctx.fill();}
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  g.addColorStop(0,'rgba(255,255,255,.06)');g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+}
+
+function drawW(ang=wAng){
+  const rarPool=spinMode==='cursed'?RARITIES.filter(r=>!r.adminOnly&&RARITIES.indexOf(r)>=3):RARITIES.filter(r=>!r.adminOnly);
+  const chFn=()=>getChances(spinMode==='cursed');
+  drawWheel(wx,ang,chFn,rarPool,spinMode==='cursed');
+}
+function drawWIce(ang=wAngIce){
+  drawWheel(wxi,ang,getIceChances,ICE_RARITIES,true);
+}
+
+/* ══════════ SPIN MODE ══════════ */
+function setMode(m){
+  spinMode=m;
+  const nb=document.getElementById('mbn'),cb=document.getElementById('mbc');
+  const btn=document.getElementById('spbtn');
+  const ci=document.getElementById('cursed-info');
+  const wr=document.getElementById('wring');
+  const nd=document.getElementById('ndl');
+  if(m==='cursed'){
+    nb.classList.remove('on');cb.classList.add('on');
+    btn.className='spbtn spbtn-cursed';btn.textContent='☠️ GIRAR MALDITO!';
+    ci.style.display='block';
+    wr.style.boxShadow='0 0 40px rgba(153,68,255,.55)';
+    nd.style.borderTopColor='#cc00ff';
+  }else{
+    cb.classList.remove('on');nb.classList.add('on');
+    btn.className='spbtn spbtn-normal';btn.textContent='🎰 GIRAR!';
+    ci.style.display='none';
+    wr.style.boxShadow='0 0 50px rgba(255,180,0,.2)';
+    nd.style.borderTopColor='#ffcc00';
+  }
+  renderCT();drawW();
+  document.getElementById('ci-cf').textContent=fmt(S.cursedFrags);
+}
+
+/* ══════════ SPIN ══════════ */
+function pickRarId(cursed=false){
+  const ch=normCh(getChances(cursed));
+  const pool=cursed?RARITIES.filter(r=>!r.adminOnly&&RARITIES.indexOf(r)>=3):RARITIES.filter(r=>!r.adminOnly);
+  let cum=0;const roll=Math.random()*100;
+  for(const r of pool){cum+=(ch[r.id]||0);if(roll<=cum)return r.id;}
+  return pool[pool.length-1]?.id||'common';
+}
+function pickAnimal(rid){
+  const pool=AN.filter(a=>a.r===rid&&!a.adminPet&&!a.isIce);
+  if(!pool.length)return AN[0];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function spinCostVal(){
+  if(spinMode==='cursed')return{type:'frags',amt:10000};
+  return{type:'gold',amt:Math.floor(100*Math.pow(1.02,S.spins))};
+}
+
+function spin(){
+  if(spinning)return;
+  const cost=spinCostVal();
+  if(cost.type==='gold'&&S.gold<cost.amt){toast('💰 Ouro insuficiente!');return;}
+  if(cost.type==='frags'&&S.frags<cost.amt){toast('Precisa de 10.000 💎 frags para girar!');return;}
+  if(cost.type==='gold')S.gold-=cost.amt;else S.frags-=cost.amt;
+  S.spins++;updNav();spinning=true;
+  document.getElementById('spbtn').disabled=true;
+  const rid=pickRarId(spinMode==='cursed');
+  const animal=pickAnimal(rid);
+  let bonusCF=0;
+  if(spinMode==='cursed'&&Math.random()<.30){bonusCF=Math.floor(Math.random()*60)+10;S.cursedFrags+=bonusCF;updNav();renderCursedUI();}
+  const totalRot=Math.PI*2*(8+Math.random()*6);
+  const dur=spinMode==='cursed'?3800+Math.random()*1000:3000+Math.random()*900;
+  const sa=wAng,st=performance.now();
+  function anim(now){
+    const el=now-st,prog=Math.min(el/dur,1),ease=1-Math.pow(1-prog,4);
+    wAng=sa+totalRot*ease;drawW(wAng);
+    if(prog<1)requestAnimationFrame(anim);
+    else{spinning=false;document.getElementById('spbtn').disabled=false;showResult(animal,bonusCF,false);}
+  }
+  requestAnimationFrame(anim);
+}
+
+/* ══════════ ICE SPIN ══════════ */
+function pickIceRarId(){
+  const ch=normCh(getIceChances());
+  let cum=0;const roll=Math.random()*100;
+  for(const r of ICE_RARITIES){cum+=(ch[r.id]||0);if(roll<=cum)return r.id;}
+  return ICE_RARITIES[ICE_RARITIES.length-1].id;
+}
+function pickIceAnimal(rid){
+  const pool=ICE_AN.filter(a=>a.r===rid);
+  if(!pool.length)return ICE_AN[0];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+let spinningIce=false;
+function spinIce(){
+  if(spinningIce)return;
+  const cost=Math.floor(100*Math.pow(1.02,S.iceSpins));
+  if(S.gold<cost){toast('💰 Ouro insuficiente!','ice');return;}
+  S.gold-=cost;S.iceSpins++;updNav();spinningIce=true;
+  document.getElementById('ice-spbtn').disabled=true;
+  const rid=pickIceRarId();
+  const animal=pickIceAnimal(rid);
+  const totalRot=Math.PI*2*(8+Math.random()*6);
+  const dur=3200+Math.random()*900;
+  const sa=wAngIce,st=performance.now();
+  function anim(now){
+    const el=now-st,prog=Math.min(el/dur,1),ease=1-Math.pow(1-prog,4);
+    wAngIce=sa+totalRot*ease;drawWIce(wAngIce);
+    if(prog<1)requestAnimationFrame(anim);
+    else{spinningIce=false;document.getElementById('ice-spbtn').disabled=false;showResult(animal,0,true);}
+  }
+  requestAnimationFrame(anim);
+  document.getElementById('ice-scost').innerHTML=`Custo: <span style="color:var(--ice)">💰${fmt(Math.floor(100*Math.pow(1.02,S.iceSpins)))}</span>`;
+}
+
+/* ══════════ RESULT ══════════ */
+function showResult(a,bonusCF,isIce){
+  const ownedMap=isIce?S.iceOwned:S.owned;
+  const own=ownedMap[a.id];
+  const isDup=own&&own.count>0;
+  const fv=typeof a.p==='number'?a.p*5:0;
+  const rar=isIce?ICE_RARITIES.find(r=>r.id===a.r)||ICE_RARITIES[0]:getRarAny(a.r);
+  const isCursed=spinMode==='cursed';
+  document.getElementById('rani').textContent=a.e+(own?.outfit||'');
+  document.getElementById('rnm').textContent=own?.customName||a.n;
+  document.getElementById('rlbl').textContent=isDup?'🔄 Duplicado!':'🎉 Novo Animal!';
+  document.getElementById('rrar').textContent=rar.l||rar.label||'';
+  document.getElementById('rrar').style.color=rar.c||rar.color||'#fff';
+  const incStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);
+  document.getElementById('rval').textContent=`💰 ${incStr}/s`;
+  const rc=document.getElementById('rcard');
+  rc.className='mo'+(isCursed?' mo-cu':isIce?' mo-ice':'');
+  rc.style.boxShadow=`0 0 36px ${rar.c||rar.color||'#fff'}66`;
+  const dup=document.getElementById('rdup');
+  dup.style.display='none';dup.style.background='';dup.style.borderColor='';dup.style.color='';
+  if(isDup&&!bonusCF){dup.style.display='block';dup.textContent=`💎 Já possui! +${fmt(fv)} frags`;}
+  if(bonusCF>0){dup.style.display='block';dup.style.background='rgba(153,68,255,.15)';dup.style.borderColor='rgba(153,68,255,.4)';dup.style.color='#cc88ff';dup.textContent=`☠️ +${bonusCF} frags amaldiçoados!`;}
+  const btns=document.getElementById('rbtns');btns.innerHTML='';
+  function doKeep(){recvA(a,false,isIce);hideRes();}
+  function doEquip(){recvA(a,false,isIce);equipPet(a.id,undefined,isIce);hideRes();}
+  function doSell(){if(fv>0){S.frags+=fv;updNav();toast(`💎 +${fmt(fv)}`);}}
+  if(isDup){
+    if(fv>0)mkb(btns,'kp',`💎 +${fmt(fv)}`,()=>{recvA(a,true,isIce);hideRes();});
+    mkb(btns,'eq','📦 Guardar',doKeep);
+  }else{
+    mkb(btns,'kp','📦 Guardar',doKeep);
+    const eqCount=(isIce?S.iceEquipped:S.equipped).filter(Boolean).length;
+    const slots=isIce?S.iceSlots:S.slots;
+    if(eqCount<slots)mkb(btns,'eq','⚡ Equipar',doEquip);
+    if(fv>0)mkb(btns,'sv','💎 Vender',()=>{recvA(a,true,isIce);hideRes();});
+  }
+  document.getElementById('rov').classList.add('on');
+  const ri=RARITIES.findIndex(r=>r.id===a.r.replace('ice_',''));
+  if(ri>=3||isIce)confetti(rar.c||rar.color||'#fff');
+}
+function hideRes(){document.getElementById('rov').classList.remove('on');}
+
+function recvA(a,toF,isIce){
+  const ownedMap=isIce?S.iceOwned:S.owned;
+  if(!ownedMap[a.id])ownedMap[a.id]={count:0,customName:null,outfit:''};
+  if(toF){if(typeof a.p==='number'&&a.p>0){S.frags+=a.p*5;updNav();}}
+  else ownedMap[a.id].count++;
+  if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();updCustSel();}
+}
+
+/* ══════════ SLOTS ══════════ */
+function slotCost(n){return Math.floor(1000*Math.pow(5,n-1));}
+function renderSlots(){
+  const g=document.getElementById('slgrid');g.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    if(i>=S.slots){d.className='slt lk';d.innerHTML='🔒';}
+    else{
+      const pid=S.equipped[i];
+      if(pid){
+        const a=BASE_AN.find(x=>x.id===pid),ow=S.owned[pid];
+        const rar=a?getRarAny(a.r):RARITIES[0];
+        d.className='slt fl';d.style.borderColor=rar.c||rar.color||'#fff';
+        d.innerHTML=`<span style="font-size:1.2rem">${a?a.e:'?'}${ow?.outfit||''}</span><span class="sn">${ow?.customName||(a?a.n:'?')}</span><span class="si">💰${a?fmt(a.i):0}/s</span>`;
+        d.onclick=()=>openPM(pid,false);
+      }else{
+        d.className='slt';d.innerHTML='➕<span class="sn" style="font-size:.5rem;color:var(--text2)">Vazio</span>';
+        d.onclick=()=>pickSlot(i,false);
+      }
+    }
+    g.appendChild(d);
+  }
+  document.getElementById('slbl').textContent=`${S.slots}/5`;
+  const sb=document.getElementById('slbtn');
+  if(S.slots>=5){sb.textContent='✅ Máximo!';sb.disabled=true;}
+  else{sb.textContent=`🔓 Slot (💎${fmt(slotCost(S.slots))})`;sb.disabled=false;}
+}
+function unlockSlot(){
+  const c=slotCost(S.slots);if(S.frags<c){toast('💎 Frags insuficientes!');return;}
+  S.frags-=c;if(S.slots<5)S.slots++;renderSlots();updNav();toast('🎉 Slot desbloqueado!');
+}
+function pickSlot(i,isIce){
+  const ownedMap=isIce?S.iceOwned:S.owned;
+  const equip=isIce?S.iceEquipped:S.equipped;
+  const av=Object.keys(ownedMap).filter(id=>ownedMap[id].count>0&&!equip.includes(id));
+  if(!av.length){toast('Nenhum pet disponível!');return;}
+  if(isIce)S.iceEquipped[i]=av[0];else S.equipped[i]=av[0];
+  if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}
+}
+function equipPet(id,idx,isIce){
+  const equip=isIce?S.iceEquipped:S.equipped;
+  const slots=isIce?S.iceSlots:S.slots;
+  let i=idx!==undefined?idx:equip.findIndex(p=>!p);
+  if(i===-1||i>=slots){toast('Slots cheios!');return;}
+  if(isIce)S.iceEquipped[i]=id;else S.equipped[i]=id;
+  if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}
+}
+function unequipPet(id,isIce){
+  const equip=isIce?S.iceEquipped:S.equipped;
+  const i=equip.indexOf(id);if(i>-1)equip.splice(i,1);
+  if(isIce){renderIceSlots();updIceInc();}else{renderSlots();updInc();}
+}
+
+/* ICE SLOTS */
+function renderIceSlots(){
+  const g=document.getElementById('ice-slgrid');g.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    if(i>=S.iceSlots){d.className='slt lk';d.innerHTML='🔒';}
+    else{
+      const pid=S.iceEquipped[i];
+      if(pid){
+        const a=ICE_AN.find(x=>x.id===pid),ow=S.iceOwned[pid];
+        const rar=ICE_RARITIES.find(r=>r.id===a?.r)||ICE_RARITIES[0];
+        d.className='slt fl';d.style.borderColor=rar.c;
+        d.innerHTML=`<span style="font-size:1.2rem">${a?a.e:'?'}${ow?.outfit||''}</span><span class="sn">${ow?.customName||(a?a.n:'?')}</span><span class="si" style="color:var(--ice)">❄️${a?fmt(a.i):0}/s</span>`;
+        d.onclick=()=>openPM(pid,true);
+      }else{
+        d.className='slt';d.innerHTML='➕<span class="sn" style="font-size:.5rem;color:var(--text2)">Vazio</span>';
+        d.onclick=()=>pickSlot(i,true);
+      }
+    }
+    g.appendChild(d);
+  }
+  document.getElementById('ice-slbl').textContent=`${S.iceSlots}/5`;
+  const sb=document.getElementById('ice-slbtn');
+  if(S.iceSlots>=5){sb.textContent='✅ Máximo!';sb.disabled=true;}
+  else{sb.textContent=`🔓 Slot (💎${fmt(slotCost(S.iceSlots))})`;sb.disabled=false;}
+}
+function unlockSlotIce(){
+  const c=slotCost(S.iceSlots);if(S.frags<c){toast('💎 Frags insuficientes!','ice');return;}
+  S.frags-=c;if(S.iceSlots<5)S.iceSlots++;renderIceSlots();updNav();toast('🎉 Slot de gelo desbloqueado!','ice');
+}
+function upLuckIce(){
+  if(S.iceLuck>=20){toast('Sorte máxima!','ice');return;}
+  const c=luckCost(S.iceLuck);if(S.gold<c){toast('💰 Ouro insuficiente!','ice');return;}
+  S.gold-=c;S.iceLuck++;updNav();updLuckIce();renderICT();toast(`⭐ Sorte Gelo Lv.${S.iceLuck}!`,'ice');
+}
+function updLuckIce(){
+  document.getElementById('ice-lvb').textContent=`Lv.${S.iceLuck}`;
+  document.getElementById('ice-lvn').textContent=S.iceLuck;
+  document.getElementById('icelb').style.width=((S.iceLuck-1)/19*100)+'%';
+  if(S.iceLuck<20){const c=luckCost(S.iceLuck);document.getElementById('ice-lvc').textContent=`💰${fmt(c)}`;document.getElementById('ice-lbtn').textContent=`✨ Melhorar (💰${fmt(c)})`;document.getElementById('ice-lbtn').disabled=false;}
+  else{document.getElementById('ice-lvc').textContent='MAX!';document.getElementById('ice-lbtn').textContent='✅ MAX!';document.getElementById('ice-lbtn').disabled=true;}
+}
+
+/* ══════════ PET MODAL ══════════ */
+function openPM(id,isIce){
+  const anPool=isIce?ICE_AN:BASE_AN;
+  const ownedMap=isIce?S.iceOwned:S.owned;
+  const a=anPool.find(x=>x.id===id);if(!a)return;
+  const ow=ownedMap[id];
+  const isEq=isIce?S.iceEquipped.includes(id):S.equipped.includes(id);
+  const rar=isIce?ICE_RARITIES.find(r=>r.id===a.r)||ICE_RARITIES[0]:getRarAny(a.r);
+  document.getElementById('pem').textContent=a.e+(ow?.outfit||'');
+  document.getElementById('pnm2').textContent=ow?.customName||a.n;
+  document.getElementById('prar2').textContent=rar.l||rar.label;
+  document.getElementById('prar2').style.color=rar.c||rar.color;
+  const incStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);
+  document.getElementById('pst2').innerHTML=`
+    <div class="ps"><div class="psl">Renda</div><div class="psv" style="color:#ffd700">💰${incStr}/s</div></div>
+    <div class="ps"><div class="psl">Valor</div><div class="psv">💎${fmt(a.p)}</div></div>
+    <div class="ps"><div class="psl">Qtd</div><div class="psv">${ow?.count||0}x</div></div>
+    <div class="ps"><div class="psl">Raridade</div><div class="psv" style="color:${rar.c||rar.color}">${rar.l||rar.label}</div></div>`;
+  const btns=document.getElementById('pbtns2');btns.innerHTML='';
+  if(isEq)mkb(btns,'rb cl','📤 Desequipar',()=>{unequipPet(id,isIce);hidePM();});
+  else{
+    const eqCount=isIce?S.iceEquipped.filter(Boolean).length:S.equipped.filter(Boolean).length;
+    const slots=isIce?S.iceSlots:S.slots;
+    if(eqCount<slots)mkb(btns,'rb eq','⚡ Equipar',()=>{equipPet(id,undefined,isIce);hidePM();});
+  }
+  if(typeof a.p==='number'&&a.p>0&&!isEq){
+    mkb(btns,'rb sv','💎 Vender',()=>{
+      if(!(ow?.count>0)){toast('Sem este pet!');return;}
+      ownedMap[id].count--;S.frags+=a.p;updNav();renderColl();hidePM();toast(`💎 +${fmt(a.p)}`);
+    });
+  }
+  mkb(btns,'rb cl','✕ Fechar',hidePM);
+  document.getElementById('pcard').className='mo'+(isIce?' mo-ice':'');
+  document.getElementById('pov').classList.add('on');
+}
+function hidePM(){document.getElementById('pov').classList.remove('on');}
+
+/* ══════════ INCOME ══════════ */
+function updInc(){
+  let hasAdmin=S.equipped.filter(Boolean).some(id=>{const a=BASE_AN.find(x=>x.id===id);return a&&a.adminPet;});
+  if(hasAdmin){document.getElementById('incd').textContent='💰 ∞ (ADMIN)';return Infinity;}
+  const inc=S.equipped.filter(Boolean).reduce((s,id)=>{const a=BASE_AN.find(x=>x.id===id);return s+(a?Number(a.i)||0:0);},0);
+  document.getElementById('incd').textContent=`💰 ${fmt(inc)}/s`;return inc;
+}
+function updIceInc(){
+  const inc=S.iceEquipped.filter(Boolean).reduce((s,id)=>{const a=ICE_AN.find(x=>x.id===id);return s+(a?Number(a.i)||0:0);},0);
+  document.getElementById('ice-incd').textContent=`❄️ ${fmt(inc)}/s`;return inc;
+}
+setInterval(()=>{
+  const inc=updInc();
+  if(inc===Infinity){S.gold+=1e12;S.passive+=1e12;updNav();}
+  else if(inc>0){S.gold+=inc;S.passive+=inc;updNav();document.getElementById('totle').textContent=fmt(S.passive);spawnFI(`+${fmt(inc)}💰`);}
+  const incIce=updIceInc();
+  if(incIce>0&&S.onIceMap){S.gold+=incIce;S.icePassive+=incIce;updNav();document.getElementById('ice-totle').textContent=fmt(S.icePassive);spawnFI(`+${fmt(incIce)}❄️`,'ice');}
+  document.getElementById('ice-spinctr').textContent=S.iceSpins;
+},1000);
+
+/* ══════════ LUCK ══════════ */
+function upLuck(){
+  if(S.luck>=20){toast('Sorte máxima!');return;}
+  const c=luckCost();if(S.gold<c){toast('💰 Insuficiente!');return;}
+  S.gold-=c;S.luck++;updNav();updLuck();renderCT();toast(`⭐ Sorte Lv.${S.luck}!`);
+}
+function updLuck(){
+  document.getElementById('lvb').textContent=`Lv.${S.luck}`;
+  document.getElementById('lvn').textContent=S.luck;
+  document.getElementById('lb').style.width=((S.luck-1)/19*100)+'%';
+  if(S.luck<20){const c=luckCost();document.getElementById('lvc').textContent=`💰${fmt(c)}`;document.getElementById('lbtn').textContent=`✨ Melhorar (💰${fmt(c)})`;document.getElementById('lbtn').disabled=false;}
+  else{document.getElementById('lvc').textContent='MAX!';document.getElementById('lbtn').textContent='✅ MAX!';document.getElementById('lbtn').disabled=true;}
+}
+
+/* ══════════ CHANCE TABLE ══════════ */
+function renderCT(){
+  const el=document.getElementById('ct');el.innerHTML='';
+  const ch=normCh(getChances(spinMode==='cursed'));
+  const pool=spinMode==='cursed'?RARITIES.filter(r=>!r.adminOnly&&RARITIES.indexOf(r)>=3):RARITIES.filter(r=>!r.adminOnly);
+  document.getElementById('ctit').textContent=spinMode==='cursed'?'☠️ Chances (Maldito)':'⚡ Chances';
+  document.getElementById('ctit').style.color=spinMode==='cursed'?'#cc88ff':'var(--text2)';
+  for(const r of pool){
+    const pct=ch[r.id]||0;if(pct<=0)continue;
+    const row=document.createElement('div');row.className='crow';
+    row.innerHTML=`<span style="color:${r.c};font-weight:800;width:60px;font-size:.68rem">${r.l}</span>
+      <div class="cbw"><div class="cb" style="background:${r.c};width:${Math.min(100,pct*2)}%"></div></div>
+      <span style="color:var(--text2);width:38px;text-align:right;font-size:.68rem">${pct.toFixed(2)}%</span>`;
+    el.appendChild(row);
+  }
+}
+function renderICT(){
+  const el=document.getElementById('ict');el.innerHTML='';
+  const ch=normCh(getIceChances());
+  for(const r of ICE_RARITIES){
+    const pct=ch[r.id]||0;if(pct<=0)continue;
+    const row=document.createElement('div');row.className='crow';
+    row.innerHTML=`<span style="color:${r.c};font-weight:800;width:65px;font-size:.68rem">${r.l}</span>
+      <div class="cbw"><div class="cb" style="background:${r.c};width:${Math.min(100,pct*2)}%"></div></div>
+      <span style="color:var(--text2);width:38px;text-align:right;font-size:.68rem">${pct.toFixed(2)}%</span>`;
+    el.appendChild(row);
+  }
+}
+
+/* ══════════ COLLECTION ══════════ */
+let cf='all';
+function renderColl(){
+  const g=document.getElementById('agrid');g.innerHTML='';
+  const pool=S.onIceMap?ICE_AN:BASE_AN.filter(a=>!a.adminPet);
+  const ownedMap=S.onIceMap?S.iceOwned:S.owned;
+  const ownC=pool.filter(a=>(ownedMap[a.id]?.count||0)>0).length;
+  document.getElementById('cprog').textContent=`${ownC}/${pool.length}`;
+  const list=cf==='all'?pool:pool.filter(a=>a.r===cf||a.r==='ice_'+cf);
+  for(const a of list){
+    const cnt=ownedMap[a.id]?.count||0,ow=ownedMap[a.id];
+    const rar=S.onIceMap?ICE_RARITIES.find(r=>r.id===a.r)||ICE_RARITIES[0]:getRarAny(a.r);
+    const card=document.createElement('div');
+    card.className=`ac ${cnt>0?'':'no'}`;
+    card.style.borderColor=cnt>0?(rar.c||rar.color)+'44':'rgba(255,255,255,.07)';
+    if(cnt>0)card.onclick=()=>openPM(a.id,S.onIceMap);
+    const incStr=typeof a.i==='string'?'10⁴⁰':fmt(a.i);
+    card.innerHTML=`${cnt>1?`<div class="cnt">${cnt}x</div>`:''}
+      <span class="ae">${a.e}${ow?.outfit||''}</span>
+      <div class="an">${ow?.customName||a.n}</div>
+      <div class="ar" style="color:${rar.c||rar.color}">${rar.l||rar.label}</div>
+      <div class="ai">💰${incStr}/s</div>`;
+    g.appendChild(card);
+  }
+}
+function buildFils(){
+  const f=document.getElementById('fils');f.innerHTML='';
+  const pool=S.onIceMap?ICE_RARITIES:RARITIES.filter(r=>!r.adminOnly);
+  const mk=(lbl,key,col)=>{
+    const b=document.createElement('button');b.className='fb';
+    if(cf===key){b.style.borderColor=col;b.style.color=col;b.style.background=col+'18';}
+    b.textContent=lbl;b.onclick=()=>{cf=key;buildFils();renderColl();};f.appendChild(b);
+  };
+  mk('Todos','all','#aaa');
+  pool.forEach(r=>mk(r.l||r.label,r.id,r.c||r.color));
+}
+
+/* ══════════ SHOP ══════════ */
+function genShop(){
+  S.cursedShopActive=Math.random()<.20;
+  const pool=BASE_AN.filter(a=>!a.adminPet&&!a.isIce);
+  const used=new Set(),res=[];let tries=0;
+  while(res.length<5&&tries<300){
+    tries++;
+    const rid=pickRarId(false);
+    const p=pool.filter(a=>a.r===rid&&!used.has(a.id));
+    if(p.length){const x=p[Math.floor(Math.random()*p.length)];used.add(x.id);res.push(x);}
+  }
+  S.shop=res;
+}
+function renderShop(){
+  const g=document.getElementById('sgrd');g.innerHTML='';
+  const title=document.getElementById('shop-title-el');
+  if(S.cursedShopActive){
+    title.innerHTML='🏪 Loja &nbsp;<span style="color:var(--cursed2);font-size:.72rem">+ ☠️ Maldita</span>';
+  }else{title.textContent='🏪 Loja de Pets';}
+  for(const a of S.shop){
+    const rar=getRarAny(a.r);
+    const d=document.createElement('div');d.className='scd';
+    d.style.boxShadow=`0 0 16px ${rar.c||rar.color}33`;d.style.borderColor=(rar.c||rar.color)+'44';
+    d.innerHTML=`<span class="se">${a.e}</span><div class="snm">${a.n}</div>
+      <div class="srar" style="color:${rar.c||rar.color}">${rar.l||rar.label}</div>
+      <span class="spr">💰${fmt(a.p)}</span>
+      <div style="font-size:.63rem;color:var(--text2);margin-bottom:6px">💰${fmt(a.i)}/s</div>
+      <button class="bb" onclick="buyPet('${a.id}')">🛒 Comprar</button>`;
+    g.appendChild(d);
+  }
+  // Cursed shop section inside shop
+  let cshopEl=document.getElementById('shop-cursed-section');
+  if(!cshopEl){
+    cshopEl=document.createElement('div');cshopEl.id='shop-cursed-section';
+    document.getElementById('sgrd').before(cshopEl);
+  }
+  if(S.cursedShopActive){
+    cshopEl.innerHTML=`<div style="background:rgba(60,0,140,.45);border:2px solid rgba(153,68,255,.55);border-radius:14px;padding:14px;margin-bottom:14px;text-align:center">
+      <div style="font-family:'Fredoka One';font-size:1.05rem;color:var(--cursed2);margin-bottom:5px">☠️ Loja Amaldiçoada</div>
+      <div style="font-size:.72rem;color:#cc88ff;margin-bottom:8px">Troque fragmentos normais por ☠️ amaldiçoados!<br><span style="font-size:.68rem;color:#999">Disponível por ${Math.floor(S.cursedShopSec/60)}m${S.cursedShopSec%60}s</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="xbtn xcu" style="max-width:160px" onclick="exchange100k()">100k 💎 → 100 ☠️</button>
+        <button class="xbtn xcu" style="max-width:160px" onclick="exchange1m()">1M 💎 → 1000 ☠️</button>
+      </div>
+    </div>`;
+  }else{cshopEl.innerHTML='';}
+}
+function buyPet(id){
+  const a=BASE_AN.find(x=>x.id===id);if(!a)return;
+  if(S.gold<a.p){toast('💰 Insuficiente!');return;}
+  S.gold-=a.p;recvA(a,false,false);toast(`🎉 ${a.n} comprado!`);renderColl();renderShop();updNav();
+}
+function startShopTimer(){
+  S.shopSec=300;clearInterval(shopInt);
+  shopInt=setInterval(()=>{
+    S.shopSec--;
+    const m=Math.floor(S.shopSec/60),s=S.shopSec%60;
+    document.getElementById('stv').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    document.getElementById('tbar').style.width=(S.shopSec/300*100)+'%';
+    // Tick cursed shop timer
+    if(S.cursedShopActive){
+      S.cursedShopSec--;
+      if(S.cursedShopSec<=0){S.cursedShopActive=false;renderShop();toast('☠️ Loja amaldiçoada encerrou!','cu');}
+      else renderShop();
+    }
+    if(S.shopSec<=0){
+      genShop();
+      if(S.cursedShopActive)S.cursedShopSec=300;
+      else S.cursedShopSec=300;
+      renderShop();startShopTimer();
+      if(S.cursedShopActive)toast('☠️ Loja Amaldiçoada apareceu!','cu');
+      else toast('🔄 Loja atualizada!');
+    }
+  },1000);
+}
+
+/* ══════════ CURSED EXCHANGES ══════════ */
+function exchange100k(){
+  if(S.frags<100000){toast('Precisa de 100.000 💎 frags!');return;}
+  S.frags-=100000;S.cursedFrags+=100;updNav();renderCursedUI();toast('☠️ +100 frags amaldiçoados!','cu');
+}
+function exchange1m(){
+  if(S.frags<1000000){toast('Precisa de 1.000.000 💎 frags!');return;}
+  S.frags-=1000000;S.cursedFrags+=1000;updNav();renderCursedUI();toast('☠️ +1.000 frags amaldiçoados!','cu');
+}
+function buySpinWithCursed(qty){
+  const cost=qty===1?10:90;
+  if(S.cursedFrags<cost){toast(`Precisa de ${cost} ☠️!`,'cu');return;}
+  S.cursedFrags-=cost;S.storedCursedSpins+=qty;updNav();renderCursedUI();toast(`☠️ +${qty} giro(s) amaldiçoado(s)!`,'cu');
+  // Set mode to cursed if they have stored spins
+  if(spinMode!=='cursed')setMode('cursed');
+}
+
+/* ══════════ ADMIN PETS ══════════ */
+function claimAdmin(who){
+  if(S.cursedFrags<1000000){toast('Precisa de 1.000.000 ☠️!','cu');return;}
+  S.cursedFrags-=1000000;
+  const a=BASE_AN.find(x=>x.id===who);if(!a)return;
+  recvA(a,false,false);updNav();renderCursedUI();toast(`🔥 ${a.n} desbloqueado!!!`);
+  confetti('#ff0055');confetti('#9944ff');
+}
+
+/* ══════════ ICE MAP ══════════ */
+function tryEnterIceMap(){document.getElementById('ice-confirm-ov').classList.add('on');}
+function confirmEnterIce(){
+  if(S.cursedFrags<1000000){toast('Precisa de 1.000.000 ☠️!','cu');document.getElementById('ice-confirm-ov').classList.remove('on');return;}
+  S.cursedFrags-=1000000;
+  // Reset normal pets
+  S.equipped=[];S.owned={};S.slots=1;
+  S.onIceMap=true;
+  document.getElementById('ice-confirm-ov').classList.remove('on');
+  document.body.classList.add('ice-mode');
+  document.getElementById('logo-txt').textContent='❄️ Animal Roulette — Gelo';
+  document.getElementById('map-badge').style.display='block';
+  document.getElementById('ice-tab').style.display='flex';
+  updNav();renderSlots();renderIceSlots();renderColl();updLuck();updLuckIce();renderCT();drawW();drawWIce();
+  toast('❄️ Bem-vindo ao Mapa de Gelo!','ice');
+  confetti('#88eeff');
+  goTab('icemap',document.getElementById('ice-tab'));
+}
+function leaveIceMap(){
+  if(!confirm('Voltar ao Mapa Normal? Você perderá seus pets de gelo.'))return;
+  S.iceEquipped=[];S.iceOwned={};S.iceSlots=1;S.iceSpins=0;S.icePassive=0;S.iceLuck=1;
+  S.onIceMap=false;
+  document.body.classList.remove('ice-mode');
+  document.getElementById('logo-txt').textContent='🎰 Animal Roulette';
+  document.getElementById('map-badge').style.display='none';
+  document.getElementById('ice-tab').style.display='none';
+  updNav();renderSlots();renderIceSlots();renderColl();updLuck();updLuckIce();
+  toast('🎰 Voltou ao mapa normal!');
+  goTab('spin',document.querySelector('[data-tab=spin]'));
+}
+
+/* ══════════ CURSED UI RENDER ══════════ */
+function renderCursedUI(){
+  document.getElementById('cf-norm').textContent=fmt(S.frags);
+  document.getElementById('cf-curs').textContent=fmt(S.cursedFrags);
+  document.getElementById('ci-cf').textContent=fmt(S.cursedFrags);
+  document.getElementById('stored-cursed-spins').textContent=S.storedCursedSpins;
+  // puzzle
+  const pct=Math.min(100,S.cursedFrags/1000000*100);
+  document.getElementById('puzzle-bar').style.width=pct+'%';
+  document.getElementById('puzzle-txt').textContent=`${fmt(S.cursedFrags)} / 1.000.000 ☠️`;
+  document.getElementById('puzzle-pct').textContent=pct.toFixed(2)+'%';
+  // admin buttons
+  ['cappu','draxen'].forEach(w=>{
+    const btn=document.getElementById(w+'-btn');
+    const owned=(S.owned[w]?.count||0)>0;
+    if(owned){btn.textContent='✅ Obtido!';btn.disabled=true;btn.style.background='linear-gradient(135deg,#44ff88,#00cc55)';btn.style.color='#001a0d';}
+    else if(S.cursedFrags>=1000000){btn.textContent='🔓 RESGATAR!';btn.disabled=false;btn.style.background='';}
+    else{btn.textContent=`🔒 ${fmt(S.cursedFrags)}/1M ☠️`;btn.disabled=true;btn.style.background='';}
+  });
+  // ice access btn
+  const iceBtn=document.getElementById('ice-access-btn');
+  if(S.onIceMap){iceBtn.textContent='✅ Já no Mapa de Gelo';iceBtn.disabled=true;}
+  else if(S.cursedFrags>=1000000){iceBtn.textContent='❄️ Acessar Mapa de Gelo (1M ☠️)';iceBtn.disabled=false;}
+  else{iceBtn.textContent=`❄️ Faltam ${fmt(1000000-S.cursedFrags)} ☠️`;iceBtn.disabled=true;}
+}
+
+/* ══════════ CUSTOMIZE ══════════ */
+function updCustSel(){
+  const sel=document.getElementById('csel'),prev=sel.value;
+  sel.innerHTML='<option value="">-- Pet --</option>';
+  BASE_AN.filter(a=>(S.owned[a.id]?.count||0)>0).forEach(a=>{
+    const o=document.createElement('option');o.value=a.id;
+    o.textContent=`${a.e} ${S.owned[a.id]?.customName||a.n}`;sel.appendChild(o);
+  });
+  if(prev)sel.value=prev;updCust();
+}
+function updCust(){
+  const id=document.getElementById('csel').value,pv=document.getElementById('cpv');
+  if(!id){pv.innerHTML='<span style="font-size:1.8rem">🐾</span><span style="color:var(--text2);font-size:.7rem">Nenhum selecionado</span>';return;}
+  const a=BASE_AN.find(x=>x.id===id),ow=S.owned[id];
+  document.getElementById('cnm').value=ow?.customName||'';
+  pv.innerHTML=`<span style="font-size:2rem">${a.e}${ow?.outfit||''}</span><span style="font-weight:800;font-size:.78rem">${ow?.customName||a.n}</span>`;
+  const or=document.getElementById('orow');or.innerHTML='';
+  const nb=document.createElement('button');nb.className=`ob${ow?.outfit===''?' sl':''}`;
+  nb.textContent='❌';nb.onclick=()=>{if(ow)ow.outfit='';updCust();renderSlots();renderColl();};or.appendChild(nb);
+  for(const o of OUTFITS){
+    const b=document.createElement('button');b.className=`ob${ow?.outfit===o?' sl':''}`;
+    b.textContent=o;b.onclick=()=>{if(ow)ow.outfit=o;updCust();renderSlots();renderColl();};or.appendChild(b);
+  }
+}
+function apCust(){
+  const id=document.getElementById('csel').value;if(!id){toast('Selecione um pet!');return;}
+  const ow=S.owned[id];if(!ow)return;
+  const nm=document.getElementById('cnm').value.trim();if(nm)ow.customName=nm;
+  updCust();renderSlots();renderColl();updCustSel();toast('✨ Customização salva!');
+}
+
+/* ══════════ STATS ══════════ */
+function renderStats(){
+  const el=document.getElementById('stbody');
+  const ownA=BASE_AN.filter(a=>(S.owned[a.id]?.count||0)>0);
+  const inc=updInc();
+  const rows=[
+    ['🎰 Giros (Normal)',S.spins],['🎰 Giros (Gelo)',S.iceSpins],
+    ['💰 Ouro',fmt(S.gold)],['💎 Fragmentos',fmt(S.frags)],
+    ['☠️ Frags Malditos',fmt(S.cursedFrags)],
+    ['⭐ Sorte',`Lv.${S.luck}`],['⭐ Sorte (Gelo)',`Lv.${S.iceLuck}`],
+    ['📚 Pets Coletados',`${ownA.length}/${BASE_AN.filter(a=>!a.adminPet).length}`],
+    ['💸 Renda/s',inc===Infinity?'∞ (Admin)':fmt(inc)+''],
+    ['💰 Total Passivo',fmt(S.passive)],
+    ['❄️ Total Passivo (Gelo)',fmt(S.icePassive)],
+    ['🗺️ Mapa Atual',S.onIceMap?'❄️ Gelo':'🎰 Normal'],
+    ['☠️ Giros ☠️ guardados',S.storedCursedSpins],
+    ['🆙 Versão','Update 1 ☠️❄️'],
+  ];
+  const rc={};RARITIES.forEach(r=>rc[r.id]=0);ownA.forEach(a=>rc[a.r]=(rc[a.r]||0)+1);
+  el.innerHTML=rows.map(([l,v])=>`<div class="srow"><span class="srl">${l}</span><span class="srv">${v}</span></div>`).join('')
+    +'<div style="margin-top:14px;font-family:\'Fredoka One\';font-size:.85rem;color:var(--text2);margin-bottom:9px">Pets por Raridade</div>'
+    +RARITIES.filter(r=>!r.adminOnly).map(r=>`<div class="srow"><span class="srl" style="color:${r.c}">${r.l}</span><span class="srv">${rc[r.id]||0}/${BASE_AN.filter(a=>a.r===r.id).length}</span></div>`).join('');
+}
+
+/* ══════════ NAV ══════════ */
+function updNav(){
+  document.getElementById('ng').textContent=fmt(S.gold);
+  document.getElementById('nf').textContent=fmt(S.frags);
+  document.getElementById('ncf').textContent=fmt(S.cursedFrags);
+  const cost=spinCostVal();
+  document.getElementById('scost').innerHTML=spinMode==='cursed'
+    ?`Custo: <span style="color:var(--cursed2)">☠️ 10.000 💎</span>`
+    :`Custo: <span style="color:#ffd700">💰${fmt(cost.amt)}</span>`;
+  document.getElementById('spinctr').textContent=S.spins;
+}
+
+/* ══════════ TABS ══════════ */
+function goTab(name,el){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('s-'+name).classList.add('on');
+  if(el)el.classList.add('on');
+  if(name==='coll'){buildFils();renderColl();}
+  if(name==='shop')updCustSel();
+  if(name==='stats')renderStats();
+  if(name==='cursed')renderCursedUI();
+  if(name==='icemap'){renderIceSlots();renderICT();updLuckIce();}
+}
+
+/* ══════════ CONFETTI ══════════ */
+const cc=document.getElementById('cc'),ccx=cc.getContext('2d');
+cc.width=window.innerWidth;cc.height=window.innerHeight;
+let cp=[];
+function confetti(col){
+  for(let i=0;i<150;i++)cp.push({x:Math.random()*cc.width,y:-10,vx:(Math.random()-.5)*7,vy:Math.random()*5+2,c:[col,'#ffcc00','#fff','#ff44cc'][Math.floor(Math.random()*4)],sz:Math.random()*9+4,rot:Math.random()*360,rv:(Math.random()-.5)*12,life:1});
+  animCC();
+}
+function animCC(){
+  ccx.clearRect(0,0,cc.width,cc.height);cp=cp.filter(p=>p.life>0);
+  for(const p of cp){p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.life-=.012;ccx.save();ccx.globalAlpha=p.life;ccx.translate(p.x,p.y);ccx.rotate(p.rot*Math.PI/180);ccx.fillStyle=p.c;ccx.fillRect(-p.sz/2,-p.sz/4,p.sz,p.sz/2);ccx.restore();}
+  if(cp.length)requestAnimationFrame(animCC);
+}
+
+/* ══════════ INIT ══════════ */
+window.addEventListener('resize',()=>{sizeWheel();cc.width=window.innerWidth;cc.height=window.innerHeight;});
+document.getElementById('rov').addEventListener('click',e=>{if(e.target===document.getElementById('rov'))hideRes();});
+document.getElementById('pov').addEventListener('click',e=>{if(e.target===document.getElementById('pov'))hidePM();});
+
+sizeWheel();
+drawW();drawWIce();
+renderCT();renderICT();
+updLuck();updLuckIce();
+renderSlots();renderIceSlots();
+updNav();updInc();updIceInc();
+genShop();renderShop();startShopTimer();
+updCustSel();renderCursedUI();
+
+document.getElementById('s-spin').classList.add('on');
+setInterval(renderCursedUI,5000);
+</script>
+</body>
+</html>
